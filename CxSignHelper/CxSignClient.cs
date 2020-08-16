@@ -1,31 +1,28 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Xml.Serialization;
-using Newtonsoft.Json;
-using RestSharp;
 
 namespace CxSignHelper
 {
     public class CxSignClient
     {
         private string _Cookie;
-        private RestClient _SignClient = new RestClient("https://mobilelearn.chaoxing.com");
-        private List<string> CourseName = new List<string>();
-        private List<Int64> CourseId = new List<Int64>();
-        private List<Int64> ClassId = new List<Int64>();
+        private readonly RestClient _SignClient = new RestClient("https://mobilelearn.chaoxing.com");
+        private readonly List<string> CourseName = new List<string>();
+        private readonly List<Int64> CourseId = new List<Int64>();
+        private readonly List<Int64> ClassId = new List<Int64>();
         private Int64 UID = 0;
 
-        private String Name;
-        private String Address;
-        private String Latitude;
-        private String Longitude;
-        private String PicturePath;
+        private readonly string Name;
+        private readonly string Address;
+        private readonly string Latitude;
+        private readonly string Longitude;
+        private readonly string PicturePath;
 
 
-        public CxSignClient(String name,String address,String latitude,String longitude,String picturepath)
+        public CxSignClient(string name, string address, string latitude, string longitude, string picturepath)
         {
             Name = name;
             Address = address;
@@ -219,11 +216,11 @@ namespace CxSignHelper
         {
             RestClient GetTaskActiveClient = new RestClient("https://mobilelearn.chaoxing.com");
 
-            for(int i = 0; i < CourseId.Count;i++)
+            for (int i = 0; i < CourseId.Count; i++)
             {
                 var request = new RestRequest("ppt/activeAPI/taskactivelist");
                 request.AddHeader("Cookie", _Cookie);
-                request.AddParameter("courseId",CourseId[i].ToString());
+                request.AddParameter("courseId", CourseId[i].ToString());
                 request.AddParameter("classId", ClassId[i].ToString());
                 request.AddParameter("uid", UID);
 
@@ -240,9 +237,9 @@ namespace CxSignHelper
                 //Console.WriteLine(response.Content);
 
 
-                for(int t = 0; t < taskObject.activeList.Count; t++)
+                for (int t = 0; t < taskObject.activeList.Count; t++)
                 {
-                    if(taskObject.activeList[t].activeType.Equals("2"))
+                    if (taskObject.activeList[t].activeType.Equals("2"))
                     {
                         ulong time = 0;
                         ulong.TryParse(taskObject.activeList[t].startTime, out time);
@@ -258,7 +255,7 @@ namespace CxSignHelper
         {
             RestClient SignClient = new RestClient("https://mobilelearn.chaoxing.com");
             var request = new RestRequest("pptSign/stuSignajax");
-            request.AddParameter("name",Name);
+            request.AddParameter("name", Name);
 
         }
 
@@ -276,6 +273,6 @@ namespace CxSignHelper
             return nowTime.ToString();
         }
 
-        
+
     }
 }
