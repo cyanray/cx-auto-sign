@@ -11,4 +11,8 @@
     <PackageReference Include="RestSharp" Version="106.11.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CxSignHelper\CxSignHelper.csproj" />
+  </ItemGroup>
+
 </Project>
