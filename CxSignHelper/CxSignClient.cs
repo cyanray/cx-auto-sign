@@ -1,4 +1,5 @@
 ﻿using CxSignHelper.Models;
+using CxSignHelper.Utils;
 using Newtonsoft.Json;
 using RestSharp;
 using System;
@@ -152,7 +153,7 @@ namespace CxSignHelper
                     {
                         ulong time = 0;
                         ulong.TryParse(taskObject.activeList[t].startTime, out time);
-                        Console.WriteLine(CourseName[i] + "的签到任务: " + TransTime(time) + " " + taskObject.activeList[t].id);
+                        Console.WriteLine(CourseName[i] + "的签到任务: " + Functions.TimestampToDateTime(time).ToString() + " " + taskObject.activeList[t].id);
 
                         Sign(taskObject.activeList[t].id);
                     }
@@ -167,21 +168,6 @@ namespace CxSignHelper
             request.AddParameter("name", Name);
 
         }
-
-        private static string TransTime(ulong str)
-        {
-            DateTime nowTime;
-            if (str.ToString().Length == 13)
-            {
-                nowTime = new DateTime(1970, 1, 1, 8, 0, 0).AddMilliseconds(str);
-            }
-            else
-            {
-                nowTime = new DateTime(1970, 1, 1, 8, 0, 0).AddSeconds(str);
-            }
-            return nowTime.ToString();
-        }
-
 
     }
 }
