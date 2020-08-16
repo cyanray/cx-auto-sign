@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using CxSignHelper.Models;
+using Newtonsoft.Json;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace CxSignHelper
 {
-    public class CxSignClient
+    public partial class CxSignClient
     {
         private string _Cookie;
         private readonly RestClient _SignClient = new RestClient("https://mobilelearn.chaoxing.com");
@@ -29,12 +30,6 @@ namespace CxSignHelper
             Latitude = latitude;
             Longitude = longitude;
             PicturePath = picturepath;
-        }
-
-        private class LoginObject
-        {
-            [JsonProperty("status")]
-            public bool Status { get; set; }
         }
 
         public void Login(string username, string password)
@@ -76,14 +71,6 @@ namespace CxSignHelper
             _Cookie = cookie;
         }
 
-        private class TokenObject
-        {
-            [JsonProperty("result")]
-            public bool Result { get; set; }
-            [JsonProperty("_token")]
-            public string Token { get; set; }
-        }
-
         public string GetToken()
         {
             RestClient TokenClient = new RestClient("https://pan-yz.chaoxing.com");
@@ -96,39 +83,6 @@ namespace CxSignHelper
             if (tokenObject.Result != true)
                 throw new Exception("获取token失败");
             return tokenObject.Token;
-        }
-
-        private class SubjectObject
-        {
-            public class Data
-            {
-                public Int64 id { get; set; }
-                public string name { get; set; }
-            }
-
-            public class Course
-            {
-                public List<Data> data { get; set; }
-            }
-
-            public class Content
-            {
-                public Int64 id { get; set; }
-                public bool isstart { get; set; }
-                public bool isretire { get; set; }
-                public Course course { get; set; }
-            }
-
-            public class ChannelList
-            {
-                public Content content { get; set; }
-            }
-
-            public class RootObject
-            {
-                public bool result { get; set; }
-                public List<ChannelList> channelList { get; set; }
-            }
         }
 
         public void GetSubject()
@@ -163,51 +117,6 @@ namespace CxSignHelper
                 {
                     //Console.WriteLine(item.content.data[0].name);
                 }
-            }
-        }
-
-        private class TaskObject
-        {
-            public class GroupList
-            {
-                public string classId { get; set; }
-                public string content { get; set; }
-                public string courseId { get; set; }
-                public string createTime { get; set; }
-                public string fid { get; set; }
-                public int id { get; set; }
-                public int isDelete { get; set; }
-                public string name { get; set; }
-                public int sort { get; set; }
-                public int type { get; set; }
-                public string uid { get; set; }
-                public string updateTime { get; set; }
-            }
-
-            public class ActiveList
-            {
-                public string nameTwo { get; set; }
-                public int groupId { get; set; }
-                public int isLook { get; set; }
-                public int releaseNum { get; set; }
-                public string url { get; set; }
-                public string picUrl { get; set; }
-                public int attendNum { get; set; }
-                public string activeType { get; set; }
-                public string nameOne { get; set; }
-                public string startTime { get; set; }
-                public Int64 id { get; set; }
-                public bool status { get; set; }
-                public string nameFour { get; set; }
-            }
-
-            public class RootObject
-            {
-                public List<GroupList> groupList { get; set; }
-                public List<ActiveList> activeList { get; set; }
-                public int count { get; set; }
-                public bool status { get; set; }
-                public bool result { get; set; }
             }
         }
 
