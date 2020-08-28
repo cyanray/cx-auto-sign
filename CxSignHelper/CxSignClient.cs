@@ -58,12 +58,12 @@ namespace CxSignHelper
         }
 
 
-        public string GetToken()
+        public async Task<string> GetTokenAsync()
         {
             RestClient TokenClient = new RestClient("https://pan-yz.chaoxing.com");
             var request = new RestRequest("api/token/uservalid");
             TokenClient.CookieContainer = _Cookie;
-            var response = TokenClient.Get(request);
+            var response = await TokenClient.ExecuteGetAsync(request);
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
             var tokenObject = JsonConvert.DeserializeObject<TokenObject>(response.Content);
