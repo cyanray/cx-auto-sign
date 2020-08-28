@@ -31,7 +31,7 @@ namespace CxSignHelper
                 throw new Exception("非200状态响应");
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
             if (loginObject.Status != true)
-                throw new Exception(loginObject.Messagee);
+                throw new Exception(loginObject.Message);
 
             CxSignClient result = new CxSignClient(LoginClient.CookieContainer);
             return result;
@@ -51,7 +51,7 @@ namespace CxSignHelper
                 throw new Exception("非200状态响应");
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
             if (loginObject.Status != true)
-                throw new Exception(loginObject.Messagee);
+                throw new Exception(loginObject.Message);
 
             CxSignClient result = new CxSignClient(LoginClient.CookieContainer);
             return result;
