@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using System.Threading.Tasks;
 
 namespace cx_auto_sign
 {
@@ -6,9 +7,9 @@ namespace cx_auto_sign
     abstract class CommandBase
     {
 
-        protected virtual int OnExecute(CommandLineApplication app)
+        protected virtual Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            return 0;
+            return Task.FromResult(0);
         }
     }
 

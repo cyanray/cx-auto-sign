@@ -14,7 +14,7 @@ namespace cx_auto_sign
         )]
     class Program : CommandBase
     {
-        static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
+        static Task<int> Main(string[] args) => CommandLineApplication.ExecuteAsync<Program>(args);
 
         private static string GetVersion()
             => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
@@ -22,10 +22,10 @@ namespace cx_auto_sign
         [Option]
         public bool Trace { get; }
 
-        protected override int OnExecute(CommandLineApplication app)
+        protected async override Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             app.ShowHelp();
-            return 1;
+            return await base.OnExecuteAsync(app);
         }
     }
 

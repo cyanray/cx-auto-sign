@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
+using System.Threading.Tasks;
 
 namespace cx_auto_sign
 {
@@ -7,10 +8,19 @@ namespace cx_auto_sign
     class WorkCommand : CommandBase
     {
 
-        protected override int OnExecute(CommandLineApplication app)
+        protected override Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            Console.WriteLine("working...");
-            return base.OnExecute(app);
+            // 读取总配置
+
+            // 读取所有课程配置
+
+            // 创建 Websocket 对象，监听消息
+
+            // 收到消息：检查新签到活动
+
+            // 收到签到活动：执行签到流程
+
+            return Task.FromResult(0);
         }
     }
 
