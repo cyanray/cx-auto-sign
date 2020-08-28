@@ -16,9 +16,14 @@ namespace CxSignHelper
     {
         private CookieContainer _Cookie = new CookieContainer();
 
+        public string TUid { get; set; } = null;
+
+        public string PUid { get; set; } = null;
+
         private CxSignClient(CookieContainer cookieContainer)
         {
             _Cookie = cookieContainer;
+            ParseCookies();
         }
 
         public static async Task<CxSignClient> LoginAsync(string username, string password)
@@ -127,6 +132,13 @@ namespace CxSignHelper
             }
             else throw new Exception("获取ImToken失败");
         }
+
+        private void ParseCookies()
+        {
+            var cookies = _Cookie.GetCookies(new Uri("chaoxing.com"));
+            PUid = cookies["_uid"].Value;
+        }
+
 
     }
 }
