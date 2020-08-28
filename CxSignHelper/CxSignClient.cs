@@ -1,6 +1,7 @@
 ﻿using CxSignHelper.Models;
 using CxSignHelper.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
 using System.Collections.Generic;
@@ -70,6 +71,24 @@ namespace CxSignHelper
             if (tokenObject.Result != true)
                 throw new Exception("获取token失败");
             return tokenObject.Token;
+        }
+
+        public async Task<List<SignTask>> GetSignTasksAsync(string courseId, string classId)
+        {
+            RestClient TokenClient = new RestClient("https://mobilelearn.chaoxing.com");
+            TokenClient.CookieContainer = _Cookie;
+            var request = new RestRequest("v2/apis/active/student/activelist");
+            request.AddParameter("fid", "0");
+            request.AddParameter("courseId", courseId);
+            request.AddParameter("classId", classId);
+            var response = await TokenClient.ExecuteGetAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw new Exception("非200状态响应");
+            var json = JObject.Parse(response.Content);
+            if (json["result"].Value<int>() != 1)
+                new Exception(json["msg"].Value<string>());
+            var taskJArray = JArray.FromObject(json["data"]["activeList"]);
+            return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).ToList();
         }
 
     }
