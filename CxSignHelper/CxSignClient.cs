@@ -39,14 +39,14 @@ namespace CxSignHelper
 
         public static async Task<CxSignClient> LoginAsync(string username, string password, string fid)
         {
-            RestClient LoginClient = new RestClient("https://passport2-api.chaoxing.com");
+            string url = $"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}";
+            RestClient LoginClient = new RestClient(url);
             LoginClient.CookieContainer = new CookieContainer();
-            var request = new RestRequest("v6/idNumberLogin", Method.POST);
-            request.AddQueryParameter("fid", fid);
-            request.AddQueryParameter("idNumber", username);
-            request.AddParameter("pwd", password, ParameterType.RequestBody);
-            request.AddParameter("t", 0, ParameterType.RequestBody);
-            var response = await LoginClient.ExecuteGetAsync(request);
+            var request = new RestRequest(Method.POST);
+            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.AddParameter("pwd", password);
+            request.AddParameter("t", "0");
+            var response = await LoginClient.ExecutePostAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
