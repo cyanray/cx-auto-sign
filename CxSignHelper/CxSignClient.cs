@@ -91,5 +91,24 @@ namespace CxSignHelper
             return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).ToList();
         }
 
+        public async Task SignAsync(SignTask task)
+        {
+            var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax");
+            SignClien.CookieContainer = _Cookie;
+            var request = new RestRequest(Method.GET);
+            // ?activeId=292002019&appType=15&ifTiJiao=1&latitude=-1&longitude=-1&clientip=1.1.1.1&address=中国&objectId=3194679e88dbc9c60a4c6e31da7fa905
+            request.AddParameter("activeId", task.Id);
+            request.AddParameter("appType", "15");
+            request.AddParameter("ifTiJiao", "1");
+            request.AddParameter("latitude", "-1");
+            request.AddParameter("longitude", "-1");
+            request.AddParameter("clientip", "1.1.1.1");
+            request.AddParameter("address", "中国");
+            request.AddParameter("objectId", "3194679e88dbc9c60a4c6e31da7fa905");
+            var response = await SignClien.ExecuteGetAsync(request);
+            if (response.Content == "success" || response.Content == "您已签到过了") return;
+            throw new Exception($"签到出错: {response.Content}");
+        }
+
     }
 }
