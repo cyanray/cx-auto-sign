@@ -31,8 +31,26 @@ namespace cx_auto_sign
                 else
                     client = await CxSignClient.LoginAsync(Username, Password, Fid);
 
-                var token = client.GetToken();
+                var token = await client.GetTokenAsync();
                 Console.WriteLine($"token: {token}");
+
+                var taskList = await client.GetSignTasksAsync("213361494", "29452910");
+
+                foreach (var task in taskList)
+                {
+                    Console.WriteLine($"任务编号: {task.Id}, 任务名称: {task.Name}");
+                    //try
+                    //{
+                    //    await client.SignAsync(task);
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    Console.WriteLine(ex.Message);
+                    //}
+                }
+
+                var imToken = await client.GetImTokenAsync();
+                Console.WriteLine($"ImToken: {imToken.ImToken}, TUid: {imToken.TUid}");
 
             }
             catch (Exception ex)

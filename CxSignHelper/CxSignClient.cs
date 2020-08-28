@@ -16,8 +16,6 @@ namespace CxSignHelper
     {
         private CookieContainer _Cookie = new CookieContainer();
 
-        public string TUid { get; set; } = null;
-
         public string PUid { get; set; } = null;
 
         private CxSignClient(CookieContainer cookieContainer)
@@ -116,7 +114,7 @@ namespace CxSignHelper
             throw new Exception($"签到出错: {response.Content}");
         }
 
-        public async Task<string> GetImTokenAsync()
+        public async Task<(string ImToken, string TUid)> GetImTokenAsync()
         {
             RestClient TokenClient = new RestClient("https://im.chaoxing.com/webim/me");
             TokenClient.CookieContainer = _Cookie;
@@ -124,18 +122,18 @@ namespace CxSignHelper
             var response = await TokenClient.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
-            var regex = new Regex(@"loginByToken\(.+'([^']+?)'\);");
+            var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
             var match = regex.Match(response.Content);
             if (match.Success)
             {
-                return match.Groups[1].Value;
+                return (match.Groups[2].Value, match.Groups[1].Value);
             }
             else throw new Exception("获取ImToken失败");
         }
 
         private void ParseCookies()
         {
-            var cookies = _Cookie.GetCookies(new Uri("chaoxing.com"));
+            var cookies = _Cookie.GetCookies(new Uri("http://chaoxing.com"));
             PUid = cookies["_uid"].Value;
         }
 
