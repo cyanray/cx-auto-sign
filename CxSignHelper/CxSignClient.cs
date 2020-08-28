@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CxSignHelper
@@ -108,6 +109,23 @@ namespace CxSignHelper
             var response = await SignClien.ExecuteGetAsync(request);
             if (response.Content == "success" || response.Content == "您已签到过了") return;
             throw new Exception($"签到出错: {response.Content}");
+        }
+
+        public async Task<string> GetImTokenAsync()
+        {
+            RestClient TokenClient = new RestClient("https://im.chaoxing.com/webim/me");
+            TokenClient.CookieContainer = _Cookie;
+            var request = new RestRequest(Method.GET);
+            var response = await TokenClient.ExecuteGetAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw new Exception("非200状态响应");
+            var regex = new Regex(@"loginByToken\(.+'([^']+?)'\);");
+            var match = regex.Match(response.Content);
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+            else throw new Exception("获取ImToken失败");
         }
 
     }
