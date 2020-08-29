@@ -131,6 +131,29 @@ namespace CxSignHelper
             else throw new Exception("获取ImToken失败");
         }
 
+        public async Task<List<CourseModel>> GetCoursesAsync()
+        {
+            RestClient TokenClient = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=");
+            TokenClient.CookieContainer = _Cookie;
+            var request = new RestRequest(Method.GET);
+            var response = await TokenClient.ExecuteGetAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw new Exception("非200状态响应");
+            var regex = new Regex(@"/mycourse/stu\?courseid=(\d+?)&clazzid=(\d+)");
+            var matches = regex.Matches(response.Content);
+            List<CourseModel> result = new List<CourseModel>();
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count <= 2) continue;
+                result.Add(new CourseModel() 
+                {
+                    CourseId = match.Groups[1].Value, 
+                    ClassId = match.Groups[2].Value 
+                });
+            }
+            return result;
+        }
+
         private void ParseCookies()
         {
             var cookies = _Cookie.GetCookies(new Uri("http://chaoxing.com"));
