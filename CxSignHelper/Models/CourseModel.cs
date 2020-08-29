@@ -8,5 +8,8 @@ namespace CxSignHelper.Models
     {
         public string CourseId { get; set; }
         public string ClassId { get; set; }
+        public string ChatId { get; set; }
+        public string CourseName { get; set; }
+        public string ClassName { get; set; }
     }
 }
