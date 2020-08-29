@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
+    <PackageReference Include="Websocket.Client" Version="4.3.21" />
   </ItemGroup>
 
   <ItemGroup>
