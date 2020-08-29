@@ -81,13 +81,13 @@ namespace CxSignHelper
 
         public async Task<List<SignTask>> GetSignTasksAsync(string courseId, string classId)
         {
-            RestClient TokenClient = new RestClient("https://mobilelearn.chaoxing.com");
-            TokenClient.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://mobilelearn.chaoxing.com");
+            client.CookieContainer = _Cookie;
             var request = new RestRequest("v2/apis/active/student/activelist");
             request.AddParameter("fid", "0");
             request.AddParameter("courseId", courseId);
             request.AddParameter("classId", classId);
-            var response = await TokenClient.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
             var json = JObject.Parse(response.Content);
@@ -118,10 +118,10 @@ namespace CxSignHelper
 
         public async Task<(string ImToken, string TUid)> GetImTokenAsync()
         {
-            RestClient TokenClient = new RestClient("https://im.chaoxing.com/webim/me");
-            TokenClient.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://im.chaoxing.com/webim/me");
+            client.CookieContainer = _Cookie;
             var request = new RestRequest(Method.GET);
-            var response = await TokenClient.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
             var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
@@ -135,10 +135,10 @@ namespace CxSignHelper
 
         public async Task<List<CourseModel>> GetCoursesAsync()
         {
-            RestClient TokenClient = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=");
-            TokenClient.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=");
+            client.CookieContainer = _Cookie;
             var request = new RestRequest(Method.GET);
-            var response = await TokenClient.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
             var regex = new Regex(@"/mycourse/stu\?courseid=(\d+?)&clazzid=(\d+)");
