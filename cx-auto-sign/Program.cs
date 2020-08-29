@@ -6,7 +6,14 @@ using System.Threading.Tasks;
 
 namespace cx_auto_sign
 {
-    [Command(Name = "cx-auto-sign", Description = "超星自动签到工具")]
+    [Command(
+        Name = "cx-auto-sign", 
+        Description = "超星自动签到工具", 
+        ExtendedHelpText = @"
+提示:
+  本程序采用 MIT 协议开源(https://github.com/cyanray/cx-auto-sign).
+  任何人可免费使用本程序并查看其源代码.
+")]
     [VersionOptionFromMember("--version", MemberName = nameof(GetVersion))]
     [Subcommand(
         typeof(InitCommand),
