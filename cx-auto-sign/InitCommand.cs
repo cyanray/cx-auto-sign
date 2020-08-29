@@ -39,6 +39,14 @@ namespace cx_auto_sign
                 AppConfig.Password = Password;
                 AppConfig.Fid = Fid;
 
+                var courses = await client.GetCoursesAsync();
+                Directory.CreateDirectory("Courses");
+                foreach (var course in courses)
+                {
+                    Console.WriteLine($"发现课程:{course.CourseName} - {course.ClassName} ({course.CourseId},{course.ClassId})");
+                    File.WriteAllText($"Courses/{course.CourseId}.json", JsonConvert.SerializeObject(course));
+                }
+
 
             }
             catch (Exception ex)
