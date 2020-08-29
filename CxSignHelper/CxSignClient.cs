@@ -16,6 +16,8 @@ namespace CxSignHelper
     {
         private CookieContainer _Cookie = new CookieContainer();
 
+        public string Fid { get; set; } = null;
+
         public string PUid { get; set; } = null;
 
         private CxSignClient(CookieContainer cookieContainer)
@@ -145,18 +147,42 @@ namespace CxSignHelper
             foreach (Match match in matches)
             {
                 if (match.Groups.Count <= 2) continue;
-                result.Add(new CourseModel() 
+                string courseId = match.Groups[1].Value;
+                string classId = match.Groups[2].Value;
+                var classDetail = await GetClassDetailAsync(courseId, classId);
+                result.Add(new CourseModel()
                 {
-                    CourseId = match.Groups[1].Value, 
-                    ClassId = match.Groups[2].Value 
+                    CourseId = courseId,
+                    ClassId = classId,
+                    ChatId = classDetail.ChatId,
+                    ClassName = classDetail.ClassName,
+                    CourseName = classDetail.CourseName
                 });
             }
             return result;
         }
 
+        private async Task<(string ChatId, string CourseName, string ClassName)> GetClassDetailAsync(string CourseId, string ClassId)
+        {
+            RestClient client = new RestClient($"https://mobilelearn.chaoxing.com/v2/apis/class/getClassDetail?fid={Fid}&courseId={CourseId}&classId={ClassId}");
+            client.CookieContainer = _Cookie;
+            var request = new RestRequest(Method.GET);
+            var response = await client.ExecuteGetAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw new Exception("非200状态响应");
+            var json = JObject.Parse(response.Content);
+            if (json["result"].Value<int>() != 1) 
+                throw new Exception(json["msg"].Value<string>());
+            var chatId = json["data"]["chatid"].Value<string>();
+            var courseName = json["data"]["course"]["data"][0]["name"].Value<string>();
+            var className = json["data"]["name"].Value<string>();
+            return (chatId, courseName, className);
+        }
+
         private void ParseCookies()
         {
             var cookies = _Cookie.GetCookies(new Uri("http://chaoxing.com"));
+            Fid = cookies["fid"].Value;
             PUid = cookies["_uid"].Value;
         }
 
