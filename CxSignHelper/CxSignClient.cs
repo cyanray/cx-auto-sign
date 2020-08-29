@@ -179,6 +179,21 @@ namespace CxSignHelper
             return (chatId, courseName, className);
         }
 
+        public async Task<string> UploadImageAsync(string path)
+        {
+            var client = new RestClient("https://pan-yz.chaoxing.com/upload");
+            client.CookieContainer = _Cookie;
+            var request = new RestRequest(Method.POST);
+            request.AddParameter("puid", PUid);
+            request.AddParameter("_token", await GetTokenAsync());
+            request.AddFile("file", path);
+            var response = await client.ExecutePostAsync(request);
+            var json = JObject.Parse(response.Content);
+            if (json["result"].Value<bool>() != true) 
+                throw new Exception(json["msg"].Value<string>());
+            return json["objectId"].Value<string>();
+        }
+
         private void ParseCookies()
         {
             var cookies = _Cookie.GetCookies(new Uri("http://chaoxing.com"));
