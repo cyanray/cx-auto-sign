@@ -52,7 +52,11 @@ namespace cx_auto_sign
 
         protected static void LoadAppConfig()
         {
-            if (!File.Exists(AppConfigPath)) return;
+            if (!File.Exists(AppConfigPath))
+            {
+                _appConfig = new AppConfig();
+                return;
+            }
             var text = File.ReadAllText(AppConfigPath);
             _appConfig = JsonConvert.DeserializeObject<AppConfig>(text);
         }
