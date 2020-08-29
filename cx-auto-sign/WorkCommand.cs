@@ -42,7 +42,7 @@ namespace cx_auto_sign
                     wsClient.ReconnectionHappened.Subscribe(info =>
                        Console.WriteLine($"Reconnection happened, type: {info.Type}"));
 
-                    wsClient.MessageReceived.Subscribe(msg =>
+                    wsClient.MessageReceived.Subscribe(async msg =>
                     {
                         Console.WriteLine($"Message received: {msg}");
                         if (msg.Text.StartsWith("o"))
@@ -69,7 +69,16 @@ namespace cx_auto_sign
                                 Array.Copy(pkgBytes, 10, cid, 0, len);
                                 var cidStr = Encoding.ASCII.GetString(cid);
                                 Console.WriteLine($"收到来自 {cidStr} 的消息");
-                                // TODO: Sign
+                                // 签到流程
+                                Console.WriteLine("正在签到中...");
+                                var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
+                                if (course is null) return;
+                                var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
+                                foreach (var task in signTasks)
+                                {
+                                    await client.SignAsync(task);
+                                }
+                                Console.WriteLine("已完成该课程所有签到");
                             }
                         }
 
