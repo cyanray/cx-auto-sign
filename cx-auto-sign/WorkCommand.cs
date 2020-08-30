@@ -35,6 +35,10 @@ namespace cx_auto_sign
                 var imParams = await client.GetImTokenAsync();
 
                 // 上传文件夹下所有图片
+                if (!Directory.Exists("images"))
+                {
+                    Directory.CreateDirectory("images");
+                }
                 DirectoryInfo di = new DirectoryInfo("images");
                 FileSystemInfo[] fis = di.GetFileSystemInfos();
                 foreach (FileSystemInfo fi in fis)
