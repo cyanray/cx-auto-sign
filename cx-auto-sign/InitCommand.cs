@@ -48,7 +48,7 @@ namespace cx_auto_sign
                 foreach (var course in courses)
                 {
                     Log.Information($"发现课程:{{a}}-{course.ClassName} ({course.CourseId},{course.ClassId})", course.CourseName);
-                    File.WriteAllText($"Courses/{course.CourseId}.json", JsonConvert.SerializeObject(course));
+                    File.WriteAllText($"Courses/{course.CourseId}-{course.ClassId}.json", JsonConvert.SerializeObject(course));
                 }
                 Console.WriteLine();
                 Log.Warning("\"./Courses\" 文件夹中每个文件对应一门课程, 不需要签到的课程请删除对应文件");
