@@ -48,7 +48,7 @@ namespace cx_auto_sign
                 foreach (var course in courses)
                 {
                     Log.Information($"发现课程:{{a}}-{course.ClassName} ({course.CourseId},{course.ClassId})", course.CourseName);
-                    File.WriteAllText($"Courses/{course.CourseId}.json", JsonConvert.SerializeObject(course));
+                    File.WriteAllText($"Courses/{course.CourseId}-{course.ClassId}.json", JsonConvert.SerializeObject(course));
                 }
                 Console.WriteLine();
                 Log.Warning("\"./Courses\" 文件夹中每个文件对应一门课程, 不需要签到的课程请删除对应文件");
@@ -56,6 +56,7 @@ namespace cx_auto_sign
                     Log.Warning("执行 {a} 开始自动签到", "./cx-auto-sign work");
                 else
                     Log.Warning("执行 {a} 开始自动签到", "dotnet ./cx-auto-sign.dll work");
+                Directory.CreateDirectory("images");
                 Log.Information("程序执行完毕.");
 
             }
