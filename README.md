@@ -44,11 +44,13 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 ./cx-auto-sign.exe init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
 ```
 
-以上指令会创建 **AppConfig.json** 文件以及 **Courses** 目录。其中 **Courses** 目录下有一系列 **.json** 文件，每个文件对应一门课程。对于不需要自动签到的课程，请删除对应的文件。
+以上指令会创建 **AppConfig.json** 文件以及 **Courses** 目录 和 **images** 目录。其中 **Courses** 目录下有一系列 **.json** 文件，每个文件对应一门课程。对于不需要自动签到的课程，请删除对应的文件。
 
 ## 0x02 开始自动签到
 
-在 cx-auto-sign.exe 所在的目录执行以下命令行:
+在 **images** 目录下存入拍照签到使用的图片
+
+然后在 cx-auto-sign.exe 所在的目录执行以下命令行:
 
 ```powershell
 ./cx-auto-sign.exe work
