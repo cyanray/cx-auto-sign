@@ -20,28 +20,30 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 - [ ] 实现基于**方式1**的自动签到工作流程
 
 
-# 使用方法 (for windows)
+# 使用方法
 
 ## 0x00 运行环境
 
-无论是 Windows 还是 Linux，都需要在[.Net Core Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.Net Core 3.1 Runtime** (或SDK)。
+首先需要在[.Net Core Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.Net Core 3.1 Runtime** (或SDK)。
 
 然后在[Release页面](https://github.com/cyanray/cx-auto-sign/releases)下载 cx-auto-sign.zip，并解压到某个目录。
 
+(你也可以在 [Actions](https://github.com/cyanray/cx-auto-sign/actions) 中找到自动编译的测试版)
+
 ## 0x01 登录并初始化配置文件
 
-在 cx-auto-sign.exe 所在的目录执行以下命令行:
+在 cx-auto-sign.dll 所在的目录执行以下命令行(Windows 和 Linux都适用):
 
 ```powershell
 # 通过手机号码登录，不需要学校编码
-./cx-auto-sign.exe init -u "双引号里面填手机号" -p "双引号里面填密码" 
+dotnet ./cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里面填密码" 
 ```
 
 **或：**
 
 ```powershell
 # 通过学号登录，需要学校编码
-./cx-auto-sign.exe init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
+dotnet ./cx-auto-sign.dll -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
 ```
 
 以上指令会创建 **AppConfig.json** 文件以及 **Courses** 目录 和 **images** 目录。其中 **Courses** 目录下有一系列 **.json** 文件，每个文件对应一门课程。对于不需要自动签到的课程，请删除对应的文件。
@@ -53,26 +55,10 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 然后在 cx-auto-sign.exe 所在的目录执行以下命令行:
 
 ```powershell
-./cx-auto-sign.exe work
+dotnet ./cx-auto-sign.dll work
 ```
 
 即可开始自动签到。
-
-# 使用方法 (for linux)
-
-使用方法和 windows 平台是差不多的，略有不同：
-
-```bash
-# 通过手机号码登录，不需要学校编码
-dotnet cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里面填密码" 
-
-# 通过学号登录，需要学校编码
-dotnet cx-auto-sign.dll init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
-
-# 开始自动签到
-dotnet cx-auto-sign.dll work
-```
-
 
 # 声明
 
