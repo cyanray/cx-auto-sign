@@ -2,9 +2,9 @@
 using CxSignHelper.Models;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace cx_auto_sign
@@ -20,7 +20,7 @@ namespace cx_auto_sign
         {
             get
             {
-                if(_courses is null)
+                if (_courses is null)
                 {
                     _courses = new List<CourseModel>();
                     var files = Directory.GetFiles("Courses", "*.json");
@@ -36,7 +36,7 @@ namespace cx_auto_sign
 
         private static AppConfig _appConfig = null;
 
-        protected static AppConfig AppConfig 
+        protected static AppConfig AppConfig
         {
             get
             {
@@ -64,6 +64,13 @@ namespace cx_auto_sign
         protected static void SaveAppConfig()
         {
             File.WriteAllText(AppConfigPath, JsonConvert.SerializeObject(_appConfig));
+        }
+
+        public CommandBase()
+        {
+            Log.Logger = new LoggerConfiguration()
+                            .WriteTo.Console()
+                            .CreateLogger();
         }
 
         protected virtual Task<int> OnExecuteAsync(CommandLineApplication app)
