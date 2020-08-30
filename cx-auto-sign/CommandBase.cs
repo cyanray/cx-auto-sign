@@ -1,6 +1,7 @@
 ﻿using cx_auto_sign.Models;
 using CxSignHelper.Models;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -64,6 +65,19 @@ namespace cx_auto_sign
         protected static void SaveAppConfig()
         {
             File.WriteAllText(AppConfigPath, JsonConvert.SerializeObject(_appConfig));
+        }
+
+        protected readonly ILogger _logger;
+
+        public CommandBase()
+        {
+            _logger = LoggerFactory.Create(configure =>
+            {
+                configure.AddConsole(c =>
+                {
+                    c.TimestampFormat = "[HH:mm:ss] ";
+                });
+            }).CreateLogger("");
         }
 
         protected virtual Task<int> OnExecuteAsync(CommandLineApplication app)
