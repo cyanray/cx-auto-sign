@@ -3,6 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -14,6 +15,10 @@ namespace cx_auto_sign
     [Command(Description = "工作模式, 监听签到任务并自动签到")]
     class WorkCommand : CommandBase
     {
+        /// <summary>
+        /// 班级的群聊ID - 上一次查询的签到任务数量
+        /// </summary>
+        private Dictionary<string, int> CidCountPair = new Dictionary<string, int>();
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
@@ -64,15 +69,25 @@ namespace cx_auto_sign
                                 var cidStr = Encoding.ASCII.GetString(cid);
                                 Log.Information("收到来自 {cidStr} 的消息", cidStr);
                                 // 签到流程
-                                Log.Information("正在签到中...");
                                 var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
                                 if (course is null) return;
+                                Log.Information("获取课程 {courseName} 的签到任务...", course.CourseName);
                                 var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
-                                foreach (var task in signTasks)
+                                if (!CidCountPair.ContainsKey(cidStr)) CidCountPair.Add(cidStr, -1);
+                                if (CidCountPair[cidStr] != signTasks.Count)
                                 {
-                                    await client.SignAsync(task);
+                                    Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
+                                    foreach (var task in signTasks)
+                                    {
+                                        await client.SignAsync(task);
+                                    }
+                                    CidCountPair[cidStr] = signTasks.Count;
+                                    Log.Information("已完成该课程所有签到");
                                 }
-                                Log.Information("已完成该课程所有签到");
+                                else
+                                {
+                                    Log.Information("课程 {courseName} 没有新的签到任务", course.CourseName);
+                                }
                             }
                         }
 
