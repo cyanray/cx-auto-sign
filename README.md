@@ -15,14 +15,18 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 - [x] 支持账号登录和学号登录两种登录方式
 - [x] 支持 `init`指令，用以生成配置文件
 - [x] 实现基于**方式2**的自动签到工作流程
-- [ ] 优化命令行的日志显示
+- [x] 优化命令行的日志显示
 - [ ] 支持签到成功后发送邮件通知
 - [ ] 实现基于**方式1**的自动签到工作流程
 
 
-# 使用方法
+# 使用方法 (for windows)
 
-下载编译好的 cx-auto-sign，解压到某个目录。
+## 0x00 运行环境
+
+无论是 Windows 还是 Linux，都需要在[.Net Core Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.Net Core 3.1 Runtime** (或SDK)。
+
+然后在[Release页面](https://github.com/cyanray/cx-auto-sign/releases)下载 cx-auto-sign.zip，并解压到某个目录。
 
 ## 0x01 登录并初始化配置文件
 
@@ -51,6 +55,22 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 ```
 
 即可开始自动签到。
+
+# 使用方法 (for linux)
+
+使用方法和 windows 平台是差不多的，略有不同：
+
+```bash
+# 通过手机号码登录，不需要学校编码
+dotnet cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里面填密码" 
+
+# 通过学号登录，需要学校编码
+dotnet cx-auto-sign.dll init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
+
+# 开始自动签到
+dotnet cx-auto-sign.dll work
+```
+
 
 # 声明
 
