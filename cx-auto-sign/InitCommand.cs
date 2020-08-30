@@ -42,6 +42,11 @@ namespace cx_auto_sign
                 AppConfig.Fid = Fid;
                 SaveAppConfig();
 
+                // 创建 Email 配置文件
+                Email.LoadEmailConfig();
+                Email.SaveEmailConfig();
+
+
                 Log.Information("获取课程数据中...");
                 var courses = await client.GetCoursesAsync();
                 Directory.CreateDirectory("Courses");

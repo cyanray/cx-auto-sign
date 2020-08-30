@@ -29,7 +29,7 @@ namespace cx_auto_sign
             }
         }
 
-        static void LoadEmailConfig()
+        public static void LoadEmailConfig()
         {
             if (!File.Exists(EmailConfigPath))
             {
@@ -41,32 +41,29 @@ namespace cx_auto_sign
             _emailConfig = JsonConvert.DeserializeObject<EmailConfig>(text);
         }
 
-        static void SaveEmailConfig()
+        public static void SaveEmailConfig()
         {
             File.WriteAllText(EmailConfigPath, JsonConvert.SerializeObject(_emailConfig));
         }
 
-        public static void SendPlainText()
+        public static void SendPlainText(string subject, string text)
         {
+            if (!EmailConfig.IsValid()) 
+                throw new Exception("邮件配置不正确");
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("cx-auto-sign", EmailConfig.SmtpUsername));
             message.To.Add(new MailboxAddress("cx-auto-sign", EmailConfig.Email));
-            message.Subject = "How you doin'?";
+            message.Subject = subject;
 
             message.Body = new TextPart("plain")
             {
-                Text = @"Hey Chandler,
-I just wanted to let you know that Monica and I were going to go play some paintball, you in?
--- Joey"
+                Text = text
             };
 
             using (var client = new SmtpClient())
             {
                 client.Connect(EmailConfig.SmtpHost, EmailConfig.SmtpPort, true);
-
-                // Note: only needed if the SMTP server requires authentication
                 client.Authenticate(EmailConfig.SmtpUsername, EmailConfig.SmtpPassword);
-
                 client.Send(message);
                 client.Disconnect(true);
             }
