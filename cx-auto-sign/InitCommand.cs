@@ -56,6 +56,7 @@ namespace cx_auto_sign
                     Log.Warning("执行 {a} 开始自动签到", "./cx-auto-sign work");
                 else
                     Log.Warning("执行 {a} 开始自动签到", "dotnet ./cx-auto-sign.dll work");
+                Directory.CreateDirectory("images");
                 Log.Information("程序执行完毕.");
 
             }
