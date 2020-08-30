@@ -1,11 +1,10 @@
 ﻿using cx_auto_sign.Models;
 using CxSignHelper.Models;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace cx_auto_sign
@@ -21,7 +20,7 @@ namespace cx_auto_sign
         {
             get
             {
-                if(_courses is null)
+                if (_courses is null)
                 {
                     _courses = new List<CourseModel>();
                     var files = Directory.GetFiles("Courses", "*.json");
@@ -37,7 +36,7 @@ namespace cx_auto_sign
 
         private static AppConfig _appConfig = null;
 
-        protected static AppConfig AppConfig 
+        protected static AppConfig AppConfig
         {
             get
             {
@@ -67,17 +66,11 @@ namespace cx_auto_sign
             File.WriteAllText(AppConfigPath, JsonConvert.SerializeObject(_appConfig));
         }
 
-        protected readonly ILogger _logger;
-
         public CommandBase()
         {
-            _logger = LoggerFactory.Create(configure =>
-            {
-                configure.AddConsole(c =>
-                {
-                    c.TimestampFormat = "[HH:mm:ss] ";
-                });
-            }).CreateLogger("");
+            Log.Logger = new LoggerConfiguration()
+                            .WriteTo.Console()
+                            .CreateLogger();
         }
 
         protected virtual Task<int> OnExecuteAsync(CommandLineApplication app)

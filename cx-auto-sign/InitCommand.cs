@@ -2,6 +2,7 @@
 using CxSignHelper;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
@@ -25,7 +26,7 @@ namespace cx_auto_sign
 
         protected async override Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            Console.WriteLine($"username: {Username}, password: {Password}");
+            Log.Information("正在登录{User}...", Username);
             try
             {
                 CxSignClient client = null;
@@ -33,26 +34,30 @@ namespace cx_auto_sign
                     client = await CxSignClient.LoginAsync(Username, Password);
                 else
                     client = await CxSignClient.LoginAsync(Username, Password, Fid);
+                Log.Information("成功登录账号{User}.", Username);
 
                 // 保存登录信息
                 AppConfig.Username = Username;
                 AppConfig.Password = Password;
                 AppConfig.Fid = Fid;
 
+                Log.Information("获取课程数据中...");
                 var courses = await client.GetCoursesAsync();
                 Directory.CreateDirectory("Courses");
                 foreach (var course in courses)
                 {
-                    Console.WriteLine($"发现课程:{course.CourseName} - {course.ClassName} ({course.CourseId},{course.ClassId})");
+                    Log.Information($"发现课程:{course.CourseName}-{course.ClassName} ({course.CourseId},{course.ClassId})");
                     File.WriteAllText($"Courses/{course.CourseId}.json", JsonConvert.SerializeObject(course));
                 }
-
+                Console.WriteLine();
+                Log.Warning("\"./Courses\" 文件夹中每个文件对应一门课程, 不需要签到的课程请删除对应文件");
+                Log.Information("程序执行完毕.");
 
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                Log.Error(ex.Message);
+                Log.Error(ex.StackTrace);
             }
 
 
