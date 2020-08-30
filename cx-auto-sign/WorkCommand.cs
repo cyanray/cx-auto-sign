@@ -1,6 +1,7 @@
 ﻿using CxSignHelper;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using System;
 using System.Linq;
 using System.Text;
@@ -16,39 +17,32 @@ namespace cx_auto_sign
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            // 读取总配置
-
-            // 读取所有课程配置
-
-            // 登录
-
             try
             {
+                Log.Information("登录账号 {Username} 中...", AppConfig.Username);
                 CxSignClient client = null;
                 if (string.IsNullOrEmpty(AppConfig.Fid))
                     client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password);
                 else
                     client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password, AppConfig.Fid);
-
+                Log.Information("登录账号 {Username} 成功", AppConfig.Username);
                 var imParams = await client.GetImTokenAsync();
-
                 // 创建 Websocket 对象，监听消息
-
                 var exitEvent = new ManualResetEvent(false);
                 var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");
                 #region 消息处理
                 using (var wsClient = new WebsocketClient(url))
                 {
                     wsClient.ReconnectionHappened.Subscribe(info =>
-                       Console.WriteLine($"Reconnection happened, type: {info.Type}"));
+                       Log.Warning("Reconnection happened, type: {Type}", info.Type));
 
                     wsClient.MessageReceived.Subscribe(async msg =>
                     {
-                        Console.WriteLine($"Message received: {msg}");
+                        Log.Information($"Message received: {msg}");
                         if (msg.Text.StartsWith("o"))
                         {
                             var loginPackage = cxim.BuildLoginPackage(imParams.TUid, imParams.ImToken);
-                            Console.WriteLine($"Message send: {loginPackage}");
+                            Log.Information($"Message send: {loginPackage}");
                             wsClient.Send(loginPackage);
                             return;
                         }
@@ -68,9 +62,9 @@ namespace cx_auto_sign
                                 var cid = new byte[len];
                                 Array.Copy(pkgBytes, 10, cid, 0, len);
                                 var cidStr = Encoding.ASCII.GetString(cid);
-                                Console.WriteLine($"收到来自 {cidStr} 的消息");
+                                Log.Information("收到来自 {cidStr} 的消息", cidStr);
                                 // 签到流程
-                                Console.WriteLine("正在签到中...");
+                                Log.Information("正在签到中...");
                                 var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
                                 if (course is null) return;
                                 var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
@@ -78,7 +72,7 @@ namespace cx_auto_sign
                                 {
                                     await client.SignAsync(task);
                                 }
-                                Console.WriteLine("已完成该课程所有签到");
+                                Log.Information("已完成该课程所有签到");
                             }
                         }
 
@@ -90,15 +84,11 @@ namespace cx_auto_sign
                 }
                 #endregion
                 Console.ReadKey();
-
-                // 收到消息：检查新签到活动
-
-                // 收到签到活动：执行签到流程
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                Log.Error(ex.Message);
+                Log.Error(ex.StackTrace);
             }
 
             return await base.OnExecuteAsync(app);
