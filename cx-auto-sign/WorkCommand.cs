@@ -32,6 +32,20 @@ namespace cx_auto_sign
                     client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password, AppConfig.Fid);
                 Log.Information("登录账号 {Username} 成功", AppConfig.Username);
                 var imParams = await client.GetImTokenAsync();
+
+                // 上传文件夹下所有图片
+                DirectoryInfo di = new DirectoryInfo("images");
+                FileSystemInfo[] fis = di.GetFileSystemInfos();
+                foreach (FileSystemInfo fi in fis)
+                {
+                    if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
+                    {
+                        Console.WriteLine("正在上传: " + fi.Name + " ...");
+                        client.Imageids.Add(await client.UploadImageAsync("images\\" + fi.Name));
+                        Console.WriteLine("上传成功, Objectid = " + client.Imageids[client.Imageids.Count - 1]);
+                    }
+                }
+
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
                 var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");

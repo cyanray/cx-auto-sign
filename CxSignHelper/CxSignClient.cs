@@ -20,6 +20,8 @@ namespace CxSignHelper
 
         public string PUid { get; set; } = null;
 
+        public List<String> Imageids { get; set; } = new List<string>();
+
         private CxSignClient(CookieContainer cookieContainer)
         {
             _Cookie = cookieContainer;
@@ -101,6 +103,18 @@ namespace CxSignHelper
         {
             var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax");
             SignClien.CookieContainer = _Cookie;
+
+            String imageid;
+            if (Imageids.Count != 0)
+            {
+                Random rd = new Random();
+                imageid = Imageids[rd.Next(0, Imageids.Count - 1)];
+            }
+            else
+            {
+                imageid = "3194679e88dbc9c60a4c6e31da7fa905";
+            }
+
             var request = new RestRequest(Method.GET);
             // ?activeId=292002019&appType=15&ifTiJiao=1&latitude=-1&longitude=-1&clientip=1.1.1.1&address=中国&objectId=3194679e88dbc9c60a4c6e31da7fa905
             request.AddParameter("activeId", task.Id);
@@ -110,7 +124,7 @@ namespace CxSignHelper
             request.AddParameter("longitude", "-1");
             request.AddParameter("clientip", "1.1.1.1");
             request.AddParameter("address", "中国");
-            request.AddParameter("objectId", "3194679e88dbc9c60a4c6e31da7fa905");
+            request.AddParameter("objectId", imageid);
             var response = await SignClien.ExecuteGetAsync(request);
             if (response.Content == "success" || response.Content == "您已签到过了") return;
             throw new Exception($"签到出错: {response.Content}");
