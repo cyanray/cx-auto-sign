@@ -26,9 +26,6 @@ namespace cx_auto_sign
         private static string GetVersion()
             => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        [Option]
-        public bool Trace { get; }
-
         protected async override Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             app.ShowHelp();
