@@ -102,6 +102,18 @@ namespace cx_auto_sign
                                     }
                                     CidCountPair[cidStr] = signTasks.Count;
                                     Log.Information("已完成该课程所有签到");
+                                    try
+                                    {
+                                        Email.SendPlainText($"cx-auto-sign 自动签到通知", 
+                                            $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
+                                        Log.Information("已发送通知邮件!");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error("发送通知邮件失败!");
+                                        Log.Error(ex.Message);
+                                        Log.Error(ex.StackTrace);
+                                    }
                                 }
                                 else
                                 {

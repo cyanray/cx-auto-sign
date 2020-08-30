@@ -42,6 +42,11 @@ namespace cx_auto_sign
                 AppConfig.Fid = Fid;
                 SaveAppConfig();
 
+                // 创建 Email 配置文件
+                Email.LoadEmailConfig();
+                Email.SaveEmailConfig();
+
+
                 Log.Information("获取课程数据中...");
                 var courses = await client.GetCoursesAsync();
                 Directory.CreateDirectory("Courses");
@@ -52,10 +57,8 @@ namespace cx_auto_sign
                 }
                 Console.WriteLine();
                 Log.Warning("\"./Courses\" 文件夹中每个文件对应一门课程, 不需要签到的课程请删除对应文件");
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                    Log.Warning("执行 {a} 开始自动签到", "./cx-auto-sign work");
-                else
-                    Log.Warning("执行 {a} 开始自动签到", "dotnet ./cx-auto-sign.dll work");
+
+                Log.Warning("执行 {a} 开始自动签到", "dotnet ./cx-auto-sign.dll work");
                 Directory.CreateDirectory("images");
                 Log.Information("程序执行完毕.");
 

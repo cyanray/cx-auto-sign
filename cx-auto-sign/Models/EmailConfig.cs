@@ -11,5 +11,14 @@ namespace cx_auto_sign.Models
         public string SmtpUsername { get; set; }
         public string SmtpPassword { get; set; }
         public string Email { get; set; }
+
+        public bool IsValid()
+        {
+            return !string.IsNullOrEmpty(SmtpHost) &&
+                   !string.IsNullOrEmpty(SmtpUsername) &&
+                   !string.IsNullOrEmpty(SmtpPassword) &&
+                   !string.IsNullOrEmpty(Email);
+        }
+
     }
 }
