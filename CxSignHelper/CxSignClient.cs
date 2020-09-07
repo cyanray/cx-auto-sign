@@ -20,7 +20,7 @@ namespace CxSignHelper
 
         public string PUid { get; set; } = null;
 
-        public List<String> Imageids { get; set; } = new List<string>();
+        public List<string> ImageIds { get; set; } = new List<string>();
 
         private CxSignClient(CookieContainer cookieContainer)
         {
@@ -105,10 +105,10 @@ namespace CxSignHelper
             SignClien.CookieContainer = _Cookie;
 
             String imageid;
-            if (Imageids.Count != 0)
+            if (ImageIds.Count != 0)
             {
                 Random rd = new Random();
-                imageid = Imageids[rd.Next(0, Imageids.Count - 1)];
+                imageid = ImageIds[rd.Next(0, ImageIds.Count - 1)];
             }
             else
             {

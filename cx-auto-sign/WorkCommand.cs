@@ -46,8 +46,8 @@ namespace cx_auto_sign
                     if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     {
                         Log.Information("正在上传: {FileName} ...", fi.Name);
-                        client.Imageids.Add(await client.UploadImageAsync("images/" + fi.Name));
-                        Log.Information("上传成功, Objectid = {Objectid}", client.Imageids[client.Imageids.Count - 1]);
+                        client.ImageIds.Add(await client.UploadImageAsync("images/" + fi.Name));
+                        Log.Information("上传成功, Objectid = {Objectid}", client.ImageIds[client.ImageIds.Count - 1]);
                     }
                 }
 
