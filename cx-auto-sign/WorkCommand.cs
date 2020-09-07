@@ -1,4 +1,5 @@
 ﻿using CxSignHelper;
+using CxSignHelper.Models;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -51,6 +52,15 @@ namespace cx_auto_sign
                     }
                 }
 
+                // 创建 SignOptions
+                var signOptions = new SignOptions()
+                {
+                    Address = AppConfig.Address,
+                    ClientIp = AppConfig.ClientIp,
+                    Latitude = AppConfig.Latitude,
+                    Longitude = AppConfig.Longitude
+                };
+
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
                 var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");
@@ -98,13 +108,13 @@ namespace cx_auto_sign
                                     Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
                                     foreach (var task in signTasks)
                                     {
-                                        await client.SignAsync(task);
+                                        await client.SignAsync(task, signOptions);
                                     }
                                     CidCountPair[cidStr] = signTasks.Count;
                                     Log.Information("已完成该课程所有签到");
                                     try
                                     {
-                                        Email.SendPlainText($"cx-auto-sign 自动签到通知", 
+                                        Email.SendPlainText($"cx-auto-sign 自动签到通知",
                                             $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
                                         Log.Information("已发送通知邮件!");
                                     }

@@ -99,7 +99,7 @@ namespace CxSignHelper
             return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).OrderByDescending(x => x.StartTime).ToList();
         }
 
-        public async Task SignAsync(SignTask task)
+        public async Task SignAsync(SignTask task, SignOptions signOptions)
         {
             var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax");
             SignClien.CookieContainer = _Cookie;
@@ -120,10 +120,10 @@ namespace CxSignHelper
             request.AddParameter("activeId", task.Id);
             request.AddParameter("appType", "15");
             request.AddParameter("ifTiJiao", "1");
-            request.AddParameter("latitude", "-1");
-            request.AddParameter("longitude", "-1");
-            request.AddParameter("clientip", "1.1.1.1");
-            request.AddParameter("address", "中国");
+            request.AddParameter("latitude", signOptions.Latitude);
+            request.AddParameter("longitude", signOptions.Longitude);
+            request.AddParameter("clientip", signOptions.ClientIp);
+            request.AddParameter("address", signOptions.Address);
             request.AddParameter("objectId", imageId);
             var response = await SignClien.ExecuteGetAsync(request);
             if (response.Content == "success" || response.Content == "您已签到过了") return;
