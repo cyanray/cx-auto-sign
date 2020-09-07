@@ -2,17 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace cx_auto_sign.Models
+namespace CxSignHelper.Models
 {
-    public class AppConfig
+    public class SignOptions
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string Fid { get; set; } = null;
         public string Address { get; set; } = "中国";
         public string Latitude { get; set; } = "-1";
         public string Longitude { get; set; } = "-1";
         public string ClientIp { get; set; } = "1.1.1.1";
-        public int DelaySeconds { get; set; } = 0;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CxSignHelper;
+using CxSignHelper.Models;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -35,21 +36,30 @@ namespace cx_auto_sign
                 var imParams = await client.GetImTokenAsync();
 
                 // 上传文件夹下所有图片
-                if (!Directory.Exists("images"))
+                if (!Directory.Exists("Images"))
                 {
-                    Directory.CreateDirectory("images");
+                    Directory.CreateDirectory("Images");
                 }
-                DirectoryInfo di = new DirectoryInfo("images");
+                DirectoryInfo di = new DirectoryInfo("Images");
                 FileSystemInfo[] fis = di.GetFileSystemInfos();
                 foreach (FileSystemInfo fi in fis)
                 {
                     if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     {
                         Log.Information("正在上传: {FileName} ...", fi.Name);
-                        client.Imageids.Add(await client.UploadImageAsync("images/" + fi.Name));
-                        Log.Information("上传成功, Objectid = {Objectid}", client.Imageids[client.Imageids.Count - 1]);
+                        client.ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
+                        Log.Information("上传成功, Objectid = {Objectid}", client.ImageIds[client.ImageIds.Count - 1]);
                     }
                 }
+
+                // 创建 SignOptions
+                var signOptions = new SignOptions()
+                {
+                    Address = AppConfig.Address,
+                    ClientIp = AppConfig.ClientIp,
+                    Latitude = AppConfig.Latitude,
+                    Longitude = AppConfig.Longitude
+                };
 
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
@@ -98,13 +108,14 @@ namespace cx_auto_sign
                                     Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
                                     foreach (var task in signTasks)
                                     {
-                                        await client.SignAsync(task);
+                                        await Task.Delay(AppConfig.DelaySeconds * 1000);
+                                        await client.SignAsync(task, signOptions);
                                     }
                                     CidCountPair[cidStr] = signTasks.Count;
                                     Log.Information("已完成该课程所有签到");
                                     try
                                     {
-                                        Email.SendPlainText($"cx-auto-sign 自动签到通知", 
+                                        Email.SendPlainText($"cx-auto-sign 自动签到通知",
                                             $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
                                         Log.Information("已发送通知邮件!");
                                     }

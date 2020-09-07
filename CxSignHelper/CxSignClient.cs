@@ -20,7 +20,7 @@ namespace CxSignHelper
 
         public string PUid { get; set; } = null;
 
-        public List<String> Imageids { get; set; } = new List<string>();
+        public List<string> ImageIds { get; set; } = new List<string>();
 
         private CxSignClient(CookieContainer cookieContainer)
         {
@@ -99,20 +99,20 @@ namespace CxSignHelper
             return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).OrderByDescending(x => x.StartTime).ToList();
         }
 
-        public async Task SignAsync(SignTask task)
+        public async Task SignAsync(SignTask task, SignOptions signOptions)
         {
             var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax");
             SignClien.CookieContainer = _Cookie;
 
-            String imageid;
-            if (Imageids.Count != 0)
+            string imageId;
+            if (ImageIds.Count != 0)
             {
                 Random rd = new Random();
-                imageid = Imageids[rd.Next(0, Imageids.Count - 1)];
+                imageId = ImageIds[rd.Next(0, ImageIds.Count - 1)];
             }
             else
             {
-                imageid = "3194679e88dbc9c60a4c6e31da7fa905";
+                imageId = "041ed4756ca9fdf1f9b6dde7a83f8794";
             }
 
             var request = new RestRequest(Method.GET);
@@ -120,11 +120,11 @@ namespace CxSignHelper
             request.AddParameter("activeId", task.Id);
             request.AddParameter("appType", "15");
             request.AddParameter("ifTiJiao", "1");
-            request.AddParameter("latitude", "-1");
-            request.AddParameter("longitude", "-1");
-            request.AddParameter("clientip", "1.1.1.1");
-            request.AddParameter("address", "中国");
-            request.AddParameter("objectId", imageid);
+            request.AddParameter("latitude", signOptions.Latitude);
+            request.AddParameter("longitude", signOptions.Longitude);
+            request.AddParameter("clientip", signOptions.ClientIp);
+            request.AddParameter("address", signOptions.Address);
+            request.AddParameter("objectId", imageId);
             var response = await SignClien.ExecuteGetAsync(request);
             if (response.Content == "success" || response.Content == "您已签到过了") return;
             throw new Exception($"签到出错: {response.Content}");
