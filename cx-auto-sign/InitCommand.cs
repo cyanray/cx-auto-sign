@@ -59,7 +59,7 @@ namespace cx_auto_sign
                 Log.Warning("\"./Courses\" 文件夹中每个文件对应一门课程, 不需要签到的课程请删除对应文件");
 
                 Log.Warning("执行 {a} 开始自动签到", "dotnet ./cx-auto-sign.dll work");
-                Directory.CreateDirectory("images");
+                Directory.CreateDirectory("Images");
                 Log.Information("程序执行完毕.");
 
             }

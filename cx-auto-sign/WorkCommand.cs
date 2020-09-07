@@ -35,18 +35,18 @@ namespace cx_auto_sign
                 var imParams = await client.GetImTokenAsync();
 
                 // 上传文件夹下所有图片
-                if (!Directory.Exists("images"))
+                if (!Directory.Exists("Images"))
                 {
-                    Directory.CreateDirectory("images");
+                    Directory.CreateDirectory("Images");
                 }
-                DirectoryInfo di = new DirectoryInfo("images");
+                DirectoryInfo di = new DirectoryInfo("Images");
                 FileSystemInfo[] fis = di.GetFileSystemInfos();
                 foreach (FileSystemInfo fi in fis)
                 {
                     if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     {
                         Log.Information("正在上传: {FileName} ...", fi.Name);
-                        client.ImageIds.Add(await client.UploadImageAsync("images/" + fi.Name));
+                        client.ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
                         Log.Information("上传成功, Objectid = {Objectid}", client.ImageIds[client.ImageIds.Count - 1]);
                     }
                 }
