@@ -108,6 +108,7 @@ namespace cx_auto_sign
                                     Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
                                     foreach (var task in signTasks)
                                     {
+                                        await Task.Delay(AppConfig.DelaySeconds * 1000);
                                         await client.SignAsync(task, signOptions);
                                     }
                                     CidCountPair[cidStr] = signTasks.Count;
