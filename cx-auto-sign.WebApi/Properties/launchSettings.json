@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true
+  },
+  "profiles": {
+    "cx_auto_sign.WebApi": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "status",
+      "applicationUrl": "http://localhost:5743",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
