@@ -90,12 +90,25 @@ namespace cx_auto_sign
                             Array.Copy(pkgBytes, t, 5);
                             if (t.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a }))
                             {
-                                var lenByte = new byte[1];
-                                Array.Copy(pkgBytes, 9, lenByte, 0, 1);
-                                var len = Convert.ToUInt32(lenByte[0]);
-                                var cid = new byte[len];
-                                Array.Copy(pkgBytes, 10, cid, 0, len);
-                                var cidStr = Encoding.ASCII.GetString(cid);
+                                uint len;
+                                string cidStr;
+                                try
+                                {
+                                    // 解析课程消息数据包
+                                    var lenByte = new byte[1];
+                                    Array.Copy(pkgBytes, 9, lenByte, 0, 1);
+                                    len = Convert.ToUInt32(lenByte[0]);
+                                    var cid = new byte[len];
+                                    Array.Copy(pkgBytes, 10, cid, 0, len);
+                                    cidStr = Encoding.ASCII.GetString(cid);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error("解析课程消息数据出错!");
+                                    Log.Error(ex.Message);
+                                    Log.Error(ex.StackTrace);
+                                    return;
+                                }
                                 Log.Information("收到来自 {cidStr} 的消息", cidStr);
                                 // 签到流程
                                 var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
