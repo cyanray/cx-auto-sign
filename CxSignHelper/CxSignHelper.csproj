@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageProjectUrl>https://github.com/cyanray/cx-auto-sign</PackageProjectUrl>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
