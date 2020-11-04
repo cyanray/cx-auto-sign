@@ -28,8 +28,10 @@ namespace CxSignHelper
 
         public static async Task<CxSignClient> LoginAsync(string username, string password)
         {
-            RestClient LoginClient = new RestClient("https://passport2-api.chaoxing.com");
-            LoginClient.CookieContainer = new CookieContainer();
+            RestClient LoginClient = new RestClient("https://passport2-api.chaoxing.com")
+            {
+                CookieContainer = new CookieContainer()
+            };
             var request = new RestRequest("v11/loginregister");
             request.AddParameter("uname", username);
             request.AddParameter("code", password);
@@ -47,8 +49,10 @@ namespace CxSignHelper
         public static async Task<CxSignClient> LoginAsync(string username, string password, string fid)
         {
             string url = $"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}";
-            RestClient LoginClient = new RestClient(url);
-            LoginClient.CookieContainer = new CookieContainer();
+            RestClient LoginClient = new RestClient(url)
+            {
+                CookieContainer = new CookieContainer()
+            };
             var request = new RestRequest(Method.POST);
             request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
             request.AddParameter("pwd", password);
@@ -81,8 +85,10 @@ namespace CxSignHelper
 
         public async Task<List<SignTask>> GetSignTasksAsync(string courseId, string classId)
         {
-            RestClient client = new RestClient("https://mobilelearn.chaoxing.com");
-            client.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://mobilelearn.chaoxing.com")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest("v2/apis/active/student/activelist");
             request.AddParameter("fid", "0");
             request.AddParameter("courseId", courseId);
@@ -99,8 +105,10 @@ namespace CxSignHelper
 
         public async Task SignAsync(SignTask task, SignOptions signOptions)
         {
-            var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax");
-            SignClien.CookieContainer = _Cookie;
+            var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest(Method.GET);
             // ?activeId=292002019&appType=15&ifTiJiao=1&latitude=-1&longitude=-1&clientip=1.1.1.1&address=中国&objectId=3194679e88dbc9c60a4c6e31da7fa905
             request.AddParameter("activeId", task.Id);
@@ -118,8 +126,10 @@ namespace CxSignHelper
 
         public async Task<(string ImToken, string TUid)> GetImTokenAsync()
         {
-            RestClient client = new RestClient("https://im.chaoxing.com/webim/me");
-            client.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://im.chaoxing.com/webim/me")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
@@ -135,8 +145,10 @@ namespace CxSignHelper
 
         public async Task<List<CourseModel>> GetCoursesAsync()
         {
-            RestClient client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=");
-            client.CookieContainer = _Cookie;
+            RestClient client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
@@ -149,14 +161,14 @@ namespace CxSignHelper
                 if (match.Groups.Count <= 2) continue;
                 string courseId = match.Groups[1].Value;
                 string classId = match.Groups[2].Value;
-                var classDetail = await GetClassDetailAsync(courseId, classId);
+                var (ChatId, CourseName, ClassName) = await GetClassDetailAsync(courseId, classId);
                 result.Add(new CourseModel()
                 {
                     CourseId = courseId,
                     ClassId = classId,
-                    ChatId = classDetail.ChatId,
-                    ClassName = classDetail.ClassName,
-                    CourseName = classDetail.CourseName
+                    ChatId = ChatId,
+                    ClassName = ClassName,
+                    CourseName = CourseName
                 });
             }
             return result;
@@ -164,8 +176,10 @@ namespace CxSignHelper
 
         private async Task<(string ChatId, string CourseName, string ClassName)> GetClassDetailAsync(string CourseId, string ClassId)
         {
-            RestClient client = new RestClient($"https://mobilelearn.chaoxing.com/v2/apis/class/getClassDetail?fid={Fid}&courseId={CourseId}&classId={ClassId}");
-            client.CookieContainer = _Cookie;
+            RestClient client = new RestClient($"https://mobilelearn.chaoxing.com/v2/apis/class/getClassDetail?fid={Fid}&courseId={CourseId}&classId={ClassId}")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
@@ -181,8 +195,10 @@ namespace CxSignHelper
 
         public async Task<string> UploadImageAsync(string path)
         {
-            var client = new RestClient("https://pan-yz.chaoxing.com/upload");
-            client.CookieContainer = _Cookie;
+            var client = new RestClient("https://pan-yz.chaoxing.com/upload")
+            {
+                CookieContainer = _Cookie
+            };
             var request = new RestRequest(Method.POST);
             request.AddParameter("puid", PUid);
             request.AddParameter("_token", await GetTokenAsync());
