@@ -20,6 +20,7 @@ cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
 - [x] 优化命令行的日志显示
 - [x] 支持签到成功后发送邮件通知
 - [ ] 实现基于**方式1**的自动签到工作流程
+- [x] 新增 WebApi
 
 
 # 使用方法
@@ -81,9 +82,54 @@ dotnet ./cx-auto-sign.dll work
     "Latitude": "-1",           // 定位签到的纬度
     "Longitude": "-1",          // 定位签到的经度
     "ClientIp": "1.1.1.1",      // 签到时提交的客户端ip地址
-    "DelaySeconds": 10          // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
+    "DelaySeconds": 10,         // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
+    "EnableWebApi": true        // 是否启动 Web Api，默认关闭
 }
 ```
+
+# WebApi 说明
+
+WebApi 默认地址是 **localhost:5743**，可在 **appsettings.json** 文件里修改。
+
+## 查看状态
+
+请求：GET /status
+
+响应：
+
+```jsonc
+{
+    "username":"0000000000",    // 学号或手机号
+    "cxAutoSignEnabled":true    // 是否启动自动签到，默认为 true
+}
+```
+
+## 启动自动签到
+
+请求：GET /status/enable
+
+响应：
+
+```jsonc
+{
+    "code": 0,
+    "msg":"success"
+}
+```
+
+## 停止自动签到
+
+请求：GET /status/disable
+
+响应：
+
+```jsonc
+{
+    "code": 0,
+    "msg":"success"
+}
+```
+
 
 # FQA
 
