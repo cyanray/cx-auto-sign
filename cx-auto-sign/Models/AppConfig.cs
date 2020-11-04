@@ -14,5 +14,6 @@ namespace cx_auto_sign.Models
         public string Longitude { get; set; } = "-1";
         public string ClientIp { get; set; } = "1.1.1.1";
         public int DelaySeconds { get; set; } = 0;
+        public bool EnableWebApi { get; set; } = false;
     }
 }

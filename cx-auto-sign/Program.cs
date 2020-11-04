@@ -32,7 +32,6 @@ namespace cx_auto_sign
         static async Task<int> Main(string[] args)
         {
             await CheckUpdate();
-            _ = Task.Run(() => { cx_auto_sign.WebApi.Program.Main(null); });
             return await CommandLineApplication.ExecuteAsync<Program>(args);
         }
 

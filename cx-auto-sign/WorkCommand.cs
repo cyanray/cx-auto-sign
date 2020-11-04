@@ -53,6 +53,18 @@ namespace cx_auto_sign
                     }
                 }
 
+                if(AppConfig.EnableWebApi)
+                {
+                    // 启动 WebApi 服务
+                    Log.Information("启动 WebApi 服务");
+                    cx_auto_sign.WebApi.IntervalData.Status = new WebApi.Status()
+                    {
+                        Username = AppConfig.Username,
+                        CxAutoSignEnabled = true
+                    };
+                    _ = Task.Run(() => { cx_auto_sign.WebApi.Program.Main(null); });
+                }
+
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
                 var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");
@@ -101,6 +113,14 @@ namespace cx_auto_sign
                                 return;
                             }
                             Log.Information("收到来自 {cidStr} 的消息", cidStr);
+
+                            // WebApi 设置
+                            if (AppConfig.EnableWebApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
+                            {
+                                Log.Warning("因 WebApi 设置，跳过签到");
+                                return;
+                            }
+
                             // 签到流程
                             var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
                             if (course is null) return;
