@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cx-auto-sign", "cx-auto-sign\cx-auto-sign.csproj", "{7D5A1B2D-2A90-4663-B2AF-F672E7602524}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CxSignHelper", "CxSignHelper\CxSignHelper.csproj", "{8D378115-C579-47FD-934C-87EDB284106C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CxSignHelper", "CxSignHelper\CxSignHelper.csproj", "{8D378115-C579-47FD-934C-87EDB284106C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cx-auto-sign.WebApi", "cx-auto-sign.WebApi\cx-auto-sign.WebApi.csproj", "{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{8D378115-C579-47FD-934C-87EDB284106C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D378115-C579-47FD-934C-87EDB284106C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D378115-C579-47FD-934C-87EDB284106C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

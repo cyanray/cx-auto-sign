@@ -60,13 +60,11 @@ namespace cx_auto_sign
                 Text = text
             };
 
-            using (var client = new SmtpClient())
-            {
-                client.Connect(EmailConfig.SmtpHost, EmailConfig.SmtpPort, true);
-                client.Authenticate(EmailConfig.SmtpUsername, EmailConfig.SmtpPassword);
-                client.Send(message);
-                client.Disconnect(true);
-            }
+            using var client = new SmtpClient();
+            client.Connect(EmailConfig.SmtpHost, EmailConfig.SmtpPort, true);
+            client.Authenticate(EmailConfig.SmtpUsername, EmailConfig.SmtpPassword);
+            client.Send(message);
+            client.Disconnect(true);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace cx_auto_sign
         /// 班级的群聊ID - 上一次查询的签到任务数量
         /// </summary>
         private Dictionary<string, int> CidCountPair = new Dictionary<string, int>();
+        public List<string> ImageIds { get; set; } = new List<string>();
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
@@ -47,19 +48,22 @@ namespace cx_auto_sign
                     if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     {
                         Log.Information("正在上传: {FileName} ...", fi.Name);
-                        client.ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
-                        Log.Information("上传成功, Objectid = {Objectid}", client.ImageIds[client.ImageIds.Count - 1]);
+                        ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
+                        Log.Information("上传成功, Objectid = {Objectid}", ImageIds[^1]);
                     }
                 }
 
-                // 创建 SignOptions
-                var signOptions = new SignOptions()
+                if(AppConfig.EnableWebApi)
                 {
-                    Address = AppConfig.Address,
-                    ClientIp = AppConfig.ClientIp,
-                    Latitude = AppConfig.Latitude,
-                    Longitude = AppConfig.Longitude
-                };
+                    // 启动 WebApi 服务
+                    Log.Information("启动 WebApi 服务");
+                    cx_auto_sign.WebApi.IntervalData.Status = new WebApi.Status()
+                    {
+                        Username = AppConfig.Username,
+                        CxAutoSignEnabled = true
+                    };
+                    _ = Task.Run(() => { cx_auto_sign.WebApi.Program.Main(null); });
+                }
 
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
@@ -88,50 +92,87 @@ namespace cx_auto_sign
                             if (pkgBytes.Length <= 5) return;
                             var t = new byte[5];
                             Array.Copy(pkgBytes, t, 5);
-                            if (t.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a }))
+                            if (!t.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a })) return;
+                            uint len;
+                            string cidStr;
+                            try
                             {
+                                // 解析课程消息数据包
                                 var lenByte = new byte[1];
                                 Array.Copy(pkgBytes, 9, lenByte, 0, 1);
-                                var len = Convert.ToUInt32(lenByte[0]);
+                                len = Convert.ToUInt32(lenByte[0]);
                                 var cid = new byte[len];
                                 Array.Copy(pkgBytes, 10, cid, 0, len);
-                                var cidStr = Encoding.ASCII.GetString(cid);
-                                Log.Information("收到来自 {cidStr} 的消息", cidStr);
-                                // 签到流程
-                                var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
-                                if (course is null) return;
-                                Log.Information("获取课程 {courseName} 的签到任务...", course.CourseName);
-                                var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
-                                if (!CidCountPair.ContainsKey(cidStr)) CidCountPair.Add(cidStr, -1);
-                                if (CidCountPair[cidStr] != signTasks.Count)
-                                {
-                                    Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
-                                    await Task.Delay(AppConfig.DelaySeconds * 1000);
-                                    foreach (var task in signTasks)
-                                    {
-                                        await client.SignAsync(task, signOptions);
-                                    }
-                                    CidCountPair[cidStr] = signTasks.Count;
-                                    Log.Information("已完成该课程所有签到");
-                                    try
-                                    {
-                                        Email.SendPlainText($"cx-auto-sign 自动签到通知",
-                                            $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
-                                        Log.Information("已发送通知邮件!");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error("发送通知邮件失败!");
-                                        Log.Error(ex.Message);
-                                        Log.Error(ex.StackTrace);
-                                    }
-                                }
-                                else
-                                {
-                                    Log.Information("课程 {courseName} 没有新的签到任务", course.CourseName);
-                                }
+                                cidStr = Encoding.ASCII.GetString(cid);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error("解析课程消息数据出错!");
+                                Log.Error(ex.Message);
+                                Log.Error(ex.StackTrace);
+                                return;
+                            }
+                            Log.Information("收到来自 {cidStr} 的消息", cidStr);
+
+                            // WebApi 设置
+                            if (AppConfig.EnableWebApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
+                            {
+                                Log.Warning("因 WebApi 设置，跳过签到");
+                                return;
+                            }
+
+                            // 签到流程
+                            var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
+                            if (course is null) return;
+                            Log.Information("获取课程 {courseName} 的签到任务...", course.CourseName);
+                            var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
+                            if (!CidCountPair.ContainsKey(cidStr)) CidCountPair.Add(cidStr, -1);
+                            if (CidCountPair[cidStr] == signTasks.Count)
+                            {
+                                Log.Information("课程 {courseName} 没有新的签到任务", course.CourseName);
+                                return;
+                            }
+
+                            Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
+                            // 随机选取一张图片作为签到图片
+                            string imageId = "041ed4756ca9fdf1f9b6dde7a83f8794";
+                            if (ImageIds.Count != 0)
+                            {
+                                Random rd = new Random();
+                                imageId = ImageIds[rd.Next(0, ImageIds.Count)];
+                            }
+                            // 创建 SignOptions
+                            var signOptions = new SignOptions()
+                            {
+                                Address = AppConfig.Address,
+                                ClientIp = AppConfig.ClientIp,
+                                Latitude = AppConfig.Latitude,
+                                Longitude = AppConfig.Longitude,
+                                ImageId = imageId
+                            };
+                            await Task.Delay(AppConfig.DelaySeconds * 1000);
+                            foreach (var task in signTasks)
+                            {
+                                // TODO: 对签到失败的情况做处理
+                                await client.SignAsync(task, signOptions);
+                            }
+                            CidCountPair[cidStr] = signTasks.Count;
+                            // 发送邮件
+                            Log.Information("已完成该课程所有签到");
+                            try
+                            {
+                                Email.SendPlainText($"cx-auto-sign 自动签到通知",
+                                    $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
+                                Log.Information("已发送通知邮件!");
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error("发送通知邮件失败!");
+                                Log.Error(ex.Message);
+                                Log.Error(ex.StackTrace);
                             }
                         }
+
 
                     });
 
