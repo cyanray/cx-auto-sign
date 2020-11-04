@@ -48,7 +48,7 @@ dotnet ./cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里
 dotnet ./cx-auto-sign.dll -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
 ```
 
-以上指令会创建 **AppConfig.json** 文件、 **EmailConfig.json** 文件、 **Courses** 目录 和 **images** 目录。
+以上指令会创建 **AppConfig.json** 文件、 **EmailConfig.json** 文件、 **Courses** 目录 和 **Images** 目录。
 
 **AppConfig.json** 文件用于配置签到的一些参数。
 
@@ -56,7 +56,7 @@ dotnet ./cx-auto-sign.dll -u "双引号里面填学号" -p "双引号里面填�
 
 **Courses** 目录下有一系列 **.json** 文件，每个文件对应一门课程。对于不需要自动签到的课程，请删除对应的文件。
 
-**images** 目录中的图片会用于拍照签到，签到时会随机抽取一张图片用于签到。
+**Images** 目录中的图片会用于拍照签到，签到时会随机抽取一张图片用于签到。
 
 ## 0x02 开始自动签到
 
@@ -67,6 +67,23 @@ dotnet ./cx-auto-sign.dll work
 ```
 
 即可开始自动签到。
+
+# 配置文件说明(AppConfig.json)
+
+执行 **init** 指令时会创建该文件，其内容以及解释如下：
+
+```json
+{
+    "Username": "",             // 学号或手机号
+    "Password": "",             // 密码
+    "Fid": "",                  // 学校代号，fid为null时使用手机号登录
+    "Address": "中国",           // 定位签到的中文名地址
+    "Latitude": "-1",           // 定位签到的纬度
+    "Longitude": "-1",          // 定位签到的经度
+    "ClientIp": "1.1.1.1",      // 签到时提交的客户端ip地址
+    "DelaySeconds": 10          // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
+}
+```
 
 # 声明
 
