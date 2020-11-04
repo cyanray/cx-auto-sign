@@ -21,6 +21,7 @@ namespace cx_auto_sign
         /// 班级的群聊ID - 上一次查询的签到任务数量
         /// </summary>
         private Dictionary<string, int> CidCountPair = new Dictionary<string, int>();
+        public List<string> ImageIds { get; set; } = new List<string>();
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
@@ -47,19 +48,10 @@ namespace cx_auto_sign
                     if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     {
                         Log.Information("正在上传: {FileName} ...", fi.Name);
-                        client.ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
-                        Log.Information("上传成功, Objectid = {Objectid}", client.ImageIds[client.ImageIds.Count - 1]);
+                        ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
+                        Log.Information("上传成功, Objectid = {Objectid}", ImageIds[ImageIds.Count - 1]);
                     }
                 }
-
-                // 创建 SignOptions
-                var signOptions = new SignOptions()
-                {
-                    Address = AppConfig.Address,
-                    ClientIp = AppConfig.ClientIp,
-                    Latitude = AppConfig.Latitude,
-                    Longitude = AppConfig.Longitude
-                };
 
                 // 创建 Websocket 对象，监听消息
                 var exitEvent = new ManualResetEvent(false);
@@ -119,6 +111,26 @@ namespace cx_auto_sign
                                 if (CidCountPair[cidStr] != signTasks.Count)
                                 {
                                     Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
+                                    // 随机选取一张图片作为签到图片
+                                    string imageId;
+                                    if (ImageIds.Count != 0)
+                                    {
+                                        Random rd = new Random();
+                                        imageId = ImageIds[rd.Next(0, ImageIds.Count - 1)];
+                                    }
+                                    else
+                                    {
+                                        imageId = "041ed4756ca9fdf1f9b6dde7a83f8794";
+                                    }
+                                    // 创建 SignOptions
+                                    var signOptions = new SignOptions()
+                                    {
+                                        Address = AppConfig.Address,
+                                        ClientIp = AppConfig.ClientIp,
+                                        Latitude = AppConfig.Latitude,
+                                        Longitude = AppConfig.Longitude,
+                                        ImageId = imageId
+                                    };
                                     await Task.Delay(AppConfig.DelaySeconds * 1000);
                                     foreach (var task in signTasks)
                                     {
