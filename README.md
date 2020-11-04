@@ -72,7 +72,7 @@ dotnet ./cx-auto-sign.dll work
 
 执行 **init** 指令时会创建该文件，其内容以及解释如下：
 
-```json
+```jsonc
 {
     "Username": "",             // 学号或手机号
     "Password": "",             // 密码
@@ -84,6 +84,11 @@ dotnet ./cx-auto-sign.dll work
     "DelaySeconds": 10          // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
 }
 ```
+
+# FQA
+
+## 1. 如何关闭自动更新检测? 
+在 **cx-auto-sign.dll** 所在目录下创建一个名为 **.noupdate** 的文件。
 
 # 声明
 
