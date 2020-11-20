@@ -46,7 +46,7 @@ dotnet ./cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里
 
 ```powershell
 # 通过学号登录，需要学校编码
-dotnet ./cx-auto-sign.dll -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
+dotnet ./cx-auto-sign.dll init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
 ```
 
 以上指令会创建 **AppConfig.json** 文件、 **EmailConfig.json** 文件、 **Courses** 目录 和 **Images** 目录。
