@@ -53,7 +53,7 @@ namespace cx_auto_sign
                     }
                 }
 
-                if(AppConfig.EnableWebApi)
+                if (AppConfig.EnableWebApi)
                 {
                     // 启动 WebApi 服务
                     Log.Information("启动 WebApi 服务");
@@ -151,10 +151,22 @@ namespace cx_auto_sign
                                 ImageId = imageId
                             };
                             await Task.Delay(AppConfig.DelaySeconds * 1000);
+                            int L = signTasks.Count - CidCountPair[cidStr];
                             foreach (var task in signTasks)
                             {
                                 // TODO: 对签到失败的情况做处理
-                                await client.SignAsync(task, signOptions);
+                                try
+                                {
+                                    await client.SignAsync(task, signOptions);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error("签到失败!");
+                                    Log.Error(ex.Message);
+                                    Log.Error(ex.StackTrace);
+                                }
+                                L--;
+                                if (L == 0) break;
                             }
                             CidCountPair[cidStr] = signTasks.Count;
                             // 发送邮件
