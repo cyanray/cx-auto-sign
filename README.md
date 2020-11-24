@@ -1,3 +1,6 @@
+# 好好读书
+无法签到二维码签到和手势签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23)
+
 # 项目简介
 
 ![](https://github.com/cyanray/cx-auto-sign/workflows/.NET%20Core/badge.svg)
