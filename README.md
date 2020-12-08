@@ -1,5 +1,5 @@
-# 好好读书
-无法签到二维码签到和手势签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23)
+# ⚠注意
+无法签到二维码签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23)
 
 # 项目简介
 
