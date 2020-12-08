@@ -1,36 +1,30 @@
 # ⚠注意
-无法签到二维码签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23)
+由于超星学习通更新，目前无法签到二维码签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23)。
+其他类型的签到正常。
 
 # 项目简介
 
 ![](https://github.com/cyanray/cx-auto-sign/workflows/.NET%20Core/badge.svg)
 
-cx-auto-sign 是基于 dotnet core 的超星学习通自动签到工具。
-本项目支持以下两种监听新签到任务事件的方式：
+cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
-1. 轮询各个课程的活动任务页，检查是否有新的签到任务
-2. 通过超星学习通的即时通讯协议，如果指定课程有新的消息事件，则检查该课程是否有新的签到任务。(就是监听学习通App的课程聊天群组有没有新的消息)
-
-**方式1** 需要以很高的频率访问超星学习通，频率低了有错过签到的风险。
-
-**方式2** 的原理是老师的签到任务也是一条消息，因此理论上能通过即时通讯协议接收到该消息。本项目最低程度地实现了学习通的即时通讯协议。在接收到指定课程的消息后，就会检查并签到该课程新的签到任务。使用**方式2**可以做到秒签到，漏签可能性很低。
+本项目最低程度实现超星学习通的即时通讯协议。通过超星学习通的即时通讯协议监测最新的课程活动。当指定的课程有新的消息，就检查该课程是否有新的签到任务，如果有则进行签到。该方法与轮询相比，灵敏度更高，占用资源更低。
 
 # 项目进度
 
 - [x] 支持账号登录和学号登录两种登录方式
 - [x] 支持 `init`指令，用以生成配置文件
-- [x] 实现基于**方式2**的自动签到工作流程
-- [x] 优化命令行的日志显示
+- [x] 实现自动签到工作流程
 - [x] 支持签到成功后发送邮件通知
-- [ ] 实现基于**方式1**的自动签到工作流程
-- [x] 新增 WebApi
+- [x] 支持 WebApi 控制自动签到
+- [ ] 支持通过server酱发送通知
 
 
 # 使用方法
 
 ## 0x00 运行环境
 
-首先需要在[.Net Core Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.Net Core 3.1 Runtime** (提示：Run server apps下边的下载)。
+首先需要在[.Net Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.NET5 Runtime** (提示：Run server apps下边的下载)。
 
 然后在[Release页面](https://github.com/cyanray/cx-auto-sign/releases)下载 cx-auto-sign.zip，并解压到某个目录。
 
@@ -92,6 +86,8 @@ dotnet ./cx-auto-sign.dll work
 
 # WebApi 说明
 
+<details>
+
 WebApi 默认地址是 **localhost:5743**，可在 **appsettings.json** 文件里修改。
 
 ## 查看状态
@@ -133,6 +129,7 @@ WebApi 默认地址是 **localhost:5743**，可在 **appsettings.json** 文件�
 }
 ```
 
+</details>
 
 # FQA
 
