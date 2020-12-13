@@ -72,15 +72,15 @@ namespace cx_auto_sign
                 using (var wsClient = new WebsocketClient(url))
                 {
                     wsClient.ReconnectionHappened.Subscribe(info =>
-                       Log.Warning("Reconnection happened, type: {Type}", info.Type));
+                       Log.Warning("CXIM: Reconnection happened, type: {Type}", info.Type));
 
                     wsClient.MessageReceived.Subscribe(async msg =>
                     {
-                        Log.Information($"Message received: {msg}");
+                        Log.Information($"CXIM: Message received: {msg}");
                         if (msg.Text.StartsWith("o"))
                         {
                             var loginPackage = cxim.BuildLoginPackage(imParams.TUid, imParams.ImToken);
-                            Log.Information($"Message send: {loginPackage}");
+                            Log.Information($"CXIM: Message send: {loginPackage}");
                             wsClient.Send(loginPackage);
                             return;
                         }
