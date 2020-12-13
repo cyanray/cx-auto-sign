@@ -183,6 +183,22 @@ namespace cx_auto_sign
                                 Log.Error(ex.Message);
                                 Log.Error(ex.StackTrace);
                             }
+                            // ServerChan 通知
+                            try
+                            {
+                                if(!string.IsNullOrEmpty(AppConfig.ServerChanKey))
+                                {
+                                    await ServerChan.SendAsync(AppConfig.ServerChanKey, "cx-auto-sign 自动签到通知",
+                                        $"发现课程 {course.CourseName}-{course.ClassName} 有新的签到任务，已签到({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
+                                    Log.Information("已发送ServerChan通知!");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error("发送ServerChan通知失败!");
+                                Log.Error(ex.Message);
+                                Log.Error(ex.StackTrace);
+                            }
                         }
 
 
