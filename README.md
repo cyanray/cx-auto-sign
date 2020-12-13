@@ -12,12 +12,12 @@ cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
 # 项目进度
 
-- [x] 支持账号登录和学号登录两种登录方式
+- [x] 支持**手机号登录**和**学号登录**两种登录方式
 - [x] 支持 `init`指令，用以生成配置文件
 - [x] 实现自动签到工作流程
-- [x] 支持签到成功后发送邮件通知
-- [x] 支持 WebApi 控制自动签到
-- [ ] 支持通过server酱发送通知
+- [x] 支持签到成功后发送**邮件通知**
+- [x] 支持 **WebApi** 控制自动签到启停
+- [x] 支持通过**Server酱**发送通知
 
 
 # 使用方法
@@ -80,7 +80,8 @@ dotnet ./cx-auto-sign.dll work
     "Longitude": "-1",          // 定位签到的经度
     "ClientIp": "1.1.1.1",      // 签到时提交的客户端ip地址
     "DelaySeconds": 10,         // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
-    "EnableWebApi": true        // 是否启动 Web Api，默认关闭
+    "EnableWebApi": true,       // 是否启动 Web Api，默认关闭
+    "ServerChanKey": "SCKEY"    // Server酱的SCKEY，默认为 null
 }
 ```
 
