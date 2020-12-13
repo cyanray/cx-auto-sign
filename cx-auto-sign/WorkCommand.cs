@@ -174,7 +174,7 @@ namespace cx_auto_sign
                             try
                             {
                                 Email.SendPlainText($"cx-auto-sign 自动签到通知",
-                                    $"发现课程{course.CourseName}-{course.ClassName}有新的签到任务，已签到({DateTime.Now})");
+                                    $"发现课程 {course.CourseName}-{course.ClassName} 有新的签到任务，已签到({DateTime.Now:yyyy/MM/dd HH:mm:ss})");
                                 Log.Information("已发送通知邮件!");
                             }
                             catch (Exception ex)
