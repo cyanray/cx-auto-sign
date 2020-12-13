@@ -15,5 +15,6 @@ namespace cx_auto_sign.Models
         public string ClientIp { get; set; } = "1.1.1.1";
         public int DelaySeconds { get; set; } = 0;
         public bool EnableWebApi { get; set; } = false;
+        public string ServerChanKey { get; set; } = null;
     }
 }
