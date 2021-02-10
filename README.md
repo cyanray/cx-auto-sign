@@ -24,7 +24,7 @@ cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
 ## 0x00 运行环境
 
-首先需要在[.Net Runtime 下载页](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)下载并安装 **.NET5 Runtime** (提示：Run server apps下边的下载)。
+首先需要在[.Net Runtime 下载页](https://dotnet.microsoft.com/download/dotnet/current/runtime)下载并安装 **.NET5 Runtime** (提示：Run server apps下边的下载)。
 
 然后在[Release页面](https://github.com/cyanray/cx-auto-sign/releases)下载 cx-auto-sign.zip，并解压到某个目录。
 
