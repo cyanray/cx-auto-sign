@@ -153,7 +153,7 @@ namespace CxSignHelper
             var response = await client.ExecuteGetAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw new Exception("非200状态响应");
-            var regex = new Regex(@"/mycourse/stu\?courseid=(\d+?)&clazzid=(\d+)");
+            var regex = new Regex(@"\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+""");
             var matches = regex.Matches(response.Content);
             List<CourseModel> result = new List<CourseModel>();
             foreach (Match match in matches)
