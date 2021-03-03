@@ -12,9 +12,12 @@ namespace cx_auto_sign
             var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             MemoryStream s = new MemoryStream();
             var bw = new BinaryWriter(s);
-            bw.Write(new byte[] { 0x08, 0x00, 0x12, 0x3c, 0x0a, 0x0e });
+            bw.Write(new byte[] { 0x08, 0x00, 0x12 });
+            bw.Write((byte)(52 + TUid.Length));   // 接下来到 webim_{timestamp} 的内容长度
+            bw.Write(new byte[] { 0x0a, 0x0e });
             bw.Write(Encoding.ASCII.GetBytes("cx-dev#cxstudy"));
-            bw.Write(new byte[] { 0x12, 0x08 });
+            bw.Write(new byte[] { 0x12 });
+            bw.Write((byte)TUid.Length);
             bw.Write(Encoding.ASCII.GetBytes(TUid));
             bw.Write(new byte[] { 0x1a, 0x0b });
             bw.Write(Encoding.ASCII.GetBytes("easemob.com"));
