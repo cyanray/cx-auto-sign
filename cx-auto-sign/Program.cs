@@ -1,15 +1,10 @@
-﻿using CxSignHelper;
-using McMaster.Extensions.CommandLineUtils;
-using Microsoft.VisualBasic;
+﻿using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using RestSharp;
-using Serilog;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace cx_auto_sign
@@ -25,11 +20,12 @@ namespace cx_auto_sign
     [VersionOptionFromMember("--version", MemberName = nameof(GetVersion))]
     [Subcommand(
         typeof(InitCommand),
-        typeof(WorkCommand)
+        typeof(WorkCommand),
+        typeof(UpdateCommand)
         )]
-    class Program : CommandBase
+    internal class Program : CommandBase
     {
-        static async Task<int> Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
             await CheckUpdate();
             return await CommandLineApplication.ExecuteAsync<Program>(args);
@@ -45,11 +41,11 @@ namespace cx_auto_sign
             try
             {
                 Console.WriteLine("正在检查更新...");
-                var body = await GetLastestVersion();
-                if (!body.Version.Contains(GetVersion()))
+                var (version, info) = await GetLatestVersion();
+                if (!version.Contains(GetVersion()))
                 {
-                    Console.WriteLine($"发现新版本: {body.Version}");
-                    Console.WriteLine(body.Info);
+                    Console.WriteLine($"发现新版本: {version}");
+                    Console.WriteLine(info);
                     Console.WriteLine("请前往 https://github.com/cyanray/cx-auto-sign/releases 下载更新，或者按任意键继续...");
                     Console.ReadKey();
                 }
@@ -62,29 +58,29 @@ namespace cx_auto_sign
         }
 
         private static string GetVersion()
-            => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-        protected async override Task<int> OnExecuteAsync(CommandLineApplication app)
+        protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             app.ShowHelp();
             return await base.OnExecuteAsync(app);
         }
 
-        private static async Task<(string Version, string Info)> GetLastestVersion()
+        private static async Task<(string Version, string Info)> GetLatestVersion()
         {
-            RestClient client = new RestClient($"https://api.github.com/repos/cyanray/cx-auto-sign/releases/latest");
+            var client = new RestClient($"https://api.github.com/repos/cyanray/cx-auto-sign/releases/latest");
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
             var json = JObject.Parse(response.Content);
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                string message = string.Empty;
+                var message = string.Empty;
                 if (json.ContainsKey("message"))
-                    message = json["message"].Value<string>();
+                    message = json["message"]!.Value<string>();
                 throw new Exception($"获取最新版本失败: {message}");
             }
-            var version = json["tag_name"].Value<string>();
-            var info = json["body"].Value<string>();
+            var version = json["tag_name"]!.Value<string>();
+            var info = json["body"]!.Value<string>();
             return (version, info);
         }
 
