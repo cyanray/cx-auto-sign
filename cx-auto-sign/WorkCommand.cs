@@ -34,7 +34,7 @@ namespace cx_auto_sign
                 else
                     client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password, AppConfig.Fid);
                 Log.Information("登录账号 {Username} 成功", AppConfig.Username);
-                var imParams = await client.GetImTokenAsync();
+                var (ImToken, TUid) = await client.GetImTokenAsync();
 
                 // 上传文件夹下所有图片
                 if (!Directory.Exists("Images"))
@@ -79,7 +79,7 @@ namespace cx_auto_sign
                         Log.Information($"CXIM: Message received: {msg}");
                         if (msg.Text.StartsWith("o"))
                         {
-                            var loginPackage = cxim.BuildLoginPackage(imParams.TUid, imParams.ImToken);
+                            var loginPackage = cxim.BuildLoginPackage(TUid, ImToken);
                             Log.Information($"CXIM: Message send: {loginPackage}");
                             wsClient.Send(loginPackage);
                             return;

@@ -98,9 +98,12 @@ namespace CxSignHelper
                 throw new Exception("非200状态响应");
             var json = JObject.Parse(response.Content);
             if (json["result"].Value<int>() != 1)
-                new Exception(json["msg"].Value<string>());
+                throw new Exception(json["msg"].Value<string>());
             var taskJArray = JArray.FromObject(json["data"]["activeList"]);
-            return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).OrderByDescending(x => x.StartTime).ToList();
+            return taskJArray.ToObject<List<SignTask>>()
+                .Where(x => x.Type == 2)
+                .OrderByDescending(x => x.StartTime)
+                .ToList();
         }
 
         public async Task SignAsync(SignTask task, SignOptions signOptions)

@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30011.22
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31512.422
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cx-auto-sign", "cx-auto-sign\cx-auto-sign.csproj", "{7D5A1B2D-2A90-4663-B2AF-F672E7602524}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CxSignHelper", "CxSignHelper\CxSignHelper.csproj", "{8D378115-C579-47FD-934C-87EDB284106C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cx-auto-sign.WebApi", "cx-auto-sign.WebApi\cx-auto-sign.WebApi.csproj", "{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cx-auto-sign.WebApi", "cx-auto-sign.WebApi\cx-auto-sign.WebApi.csproj", "{B3E3D7FD-2DBE-4F3F-862E-53D9EF6CBD25}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{31482E63-79FD-40E7-8E45-22E185A6183E}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
