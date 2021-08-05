@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Net;
 using System.Text;
+using CxSignHelper;
 using MailKit.Net.Smtp;
 using MimeKit;
 using Newtonsoft.Json.Linq;
@@ -103,10 +103,11 @@ namespace cx_auto_sign
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
                 if (!string.IsNullOrEmpty(text))
+                {
                     request.AddParameter("desp", "```text\n" + text + "\n```");
+                }
                 var response = client.Execute(request);
-                if (response.StatusCode != HttpStatusCode.OK)
-                    throw new Exception("非 200 状态响应：" + response.StatusCode);
+                CxSignClient.TestResponseCode(response);
                 var json = JObject.Parse(response.Content);
                 if(json["data"]!["errno"]!.Value<int>() != 0)
                 {
@@ -140,8 +141,7 @@ namespace cx_auto_sign
                     ["template"] = "txt"
                 }.ToString());
                 var response = client.Execute(request);
-                if (response.StatusCode != HttpStatusCode.OK)
-                    throw new Exception("非 200 状态响应：" + response.StatusCode);
+                CxSignClient.TestResponseCode(response);
                 var json = JObject.Parse(response.Content);
                 if(json["code"]?.Value<int>() != 200)
                 {

@@ -76,7 +76,9 @@ namespace cx_auto_sign
             {
                 var message = string.Empty;
                 if (json.ContainsKey("message"))
+                {
                     message = json["message"]!.Value<string>();
+                }
                 throw new Exception($"获取最新版本失败: {message}");
             }
             var version = json["tag_name"]!.Value<string>();

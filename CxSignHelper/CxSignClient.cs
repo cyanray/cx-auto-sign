@@ -53,7 +53,9 @@ namespace CxSignHelper
             TestResponseCode(response);
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
             if (loginObject.Status != true)
+            {
                 throw new Exception(loginObject.Message);
+            }
             return new CxSignClient(client.CookieContainer);
         }
 
@@ -68,7 +70,9 @@ namespace CxSignHelper
             TestResponseCode(response);
             var tokenObject = JsonConvert.DeserializeObject<TokenObject>(response.Content);
             if (tokenObject.Result != true)
-                throw new Exception("获取token失败");
+            {
+                throw new Exception("获取 token 失败");
+            }
             return tokenObject.Token;
         }
 
@@ -86,7 +90,9 @@ namespace CxSignHelper
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
             if (json["result"]!.Value<int>() != 1)
+            {
                 throw new Exception(json["msg"]?.Value<string>());
+            }
             return (JArray)json["data"]!["activeList"];
         }
 
@@ -102,8 +108,10 @@ namespace CxSignHelper
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
             if (json["result"]?.Value<int>() != 1)
+            {
                 throw new Exception("Message: " + json["msg"]?.Value<string>() +
                                     "\nError Message: " + json["errorMsg"]?.Value<string>());
+            }
             return json["data"];
         }
 
@@ -129,7 +137,7 @@ namespace CxSignHelper
 
         public async Task<(string ImToken, string TUid)> GetImTokenAsync()
         {
-            RestClient client = new RestClient("https://im.chaoxing.com/webim/me")
+            var client = new RestClient("https://im.chaoxing.com/webim/me")
             {
                 CookieContainer = _cookie
             };
@@ -138,11 +146,11 @@ namespace CxSignHelper
             TestResponseCode(response);
             var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
             var match = regex.Match(response.Content);
-            if (match.Success)
+            if (!match.Success)
             {
-                return (match.Groups[2].Value, match.Groups[1].Value);
+                throw new Exception("获取 ImToken 失败");
             }
-            else throw new Exception("获取ImToken失败");
+            return (match.Groups[2].Value, match.Groups[1].Value);
         }
 
         public async Task GetCoursesAsync(JToken course)
@@ -158,7 +166,10 @@ namespace CxSignHelper
             var matches = regex.Matches(response.Content);
             foreach (Match match in matches)
             {
-                if (match.Groups.Count <= 2) continue;
+                if (match.Groups.Count <= 2)
+                {
+                    continue;
+                }
                 var courseId = match.Groups[1].Value;
                 var classId = match.Groups[2].Value;
                 var (chatId, courseName, className) = await GetClassDetailAsync(courseId, classId);
@@ -184,8 +195,10 @@ namespace CxSignHelper
             var response = await client.ExecuteGetAsync(request);
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
-            if (json["result"]!.Value<int>() != 1) 
+            if (json["result"]!.Value<int>() != 1)
+            {
                 throw new Exception(json["msg"]?.Value<string>());
+            }
             var data = json["data"];
             var chatId = data!["chatid"]!.Value<string>();
             var courseName = data["course"]!["data"]![0]!["name"]!.Value<string>();
@@ -205,8 +218,10 @@ namespace CxSignHelper
             request.AddFile("file", path);
             var response = await client.ExecutePostAsync(request);
             var json = JObject.Parse(response.Content);
-            if (json["result"]!.Value<bool>() != true) 
+            if (json["result"]!.Value<bool>() != true)
+            {
                 throw new Exception(json["msg"]?.Value<string>());
+            }
             return json["objectId"]!.Value<string>();
         }
 
@@ -217,7 +232,7 @@ namespace CxSignHelper
             PUid = cookies["_uid"]!.Value;
         }
 
-        private static void TestResponseCode(IRestResponse response)
+        public static void TestResponseCode(IRestResponse response)
         {
             var code = response.StatusCode;
             if (code != HttpStatusCode.OK)

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace CxSignHelper.Models
+﻿namespace CxSignHelper.Models
 {
     public enum SignType
     {

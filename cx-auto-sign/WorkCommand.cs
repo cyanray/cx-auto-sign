@@ -105,7 +105,10 @@ namespace cx_auto_sign
                             return;
                         }
 
-                        if (!msg.Text.StartsWith("a")) return;
+                        if (!msg.Text.StartsWith("a"))
+                        {
+                            return;
+                        }
                         var arrMsg = JArray.Parse(msg.Text[1..]);
                         foreach (var message in arrMsg)
                         {
