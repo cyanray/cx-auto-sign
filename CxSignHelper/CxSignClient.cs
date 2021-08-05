@@ -23,35 +23,33 @@ namespace CxSignHelper
             ParseCookies();
         }
 
-        public static async Task<CxSignClient> LoginAsync(string username, string password)
+        public static async Task<CxSignClient> LoginAsync(string username, string password, string fid = null)
         {
-            var client = new RestClient("https://passport2-api.chaoxing.com")
+            RestClient client;
+            IRestResponse response;
+            if (string.IsNullOrEmpty(fid))
             {
-                CookieContainer = new CookieContainer()
-            };
-            var request = new RestRequest("v11/loginregister");
-            request.AddParameter("uname", username);
-            request.AddParameter("code", password);
-            var response = await client.ExecuteGetAsync(request);
-            TestResponseCode(response);
-            var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
-            if (loginObject.Status != true)
-                throw new Exception(loginObject.Message);
-            return new CxSignClient(client.CookieContainer);
-        }
-
-        public static async Task<CxSignClient> LoginAsync(string username, string password, string fid)
-        {
-            var url = $"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}";
-            var client = new RestClient(url)
+                client = new RestClient("https://passport2-api.chaoxing.com")
+                {
+                    CookieContainer = new CookieContainer()
+                };
+                var request = new RestRequest("v11/loginregister");
+                request.AddParameter("uname", username);
+                request.AddParameter("code", password);
+                response = await client.ExecuteGetAsync(request);
+            }
+            else
             {
-                CookieContainer = new CookieContainer()
-            };
-            var request = new RestRequest(Method.POST);
-            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-            request.AddParameter("pwd", password);
-            request.AddParameter("t", "0");
-            var response = await client.ExecutePostAsync(request);
+                client = new RestClient($"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}")
+                {
+                    CookieContainer = new CookieContainer()
+                };
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+                request.AddParameter("pwd", password);
+                request.AddParameter("t", "0");
+                response = await client.ExecutePostAsync(request);
+            }
             TestResponseCode(response);
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
             if (loginObject.Status != true)
