@@ -73,9 +73,9 @@ namespace cx_auto_sign
             return _data;
         }
 
-        public JToken GetCourse(string chatId)
+        public CourseDataConfig GetCourse(string chatId)
         {
-            return _courses?[chatId];
+            return new CourseDataConfig(_courses?[chatId]);
         }
 
         private void Save()

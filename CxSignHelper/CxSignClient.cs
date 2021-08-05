@@ -61,9 +61,11 @@ namespace CxSignHelper
 
         private async Task<string> GetTokenAsync()
         {
-            var client = new RestClient("https://pan-yz.chaoxing.com");
+            var client = new RestClient("https://pan-yz.chaoxing.com")
+            {
+                CookieContainer = _cookie
+            };
             var request = new RestRequest("api/token/uservalid");
-            client.CookieContainer = _cookie;
             var response = await client.ExecuteGetAsync(request);
             TestResponseCode(response);
             var tokenObject = JsonConvert.DeserializeObject<TokenObject>(response.Content);
@@ -72,25 +74,23 @@ namespace CxSignHelper
             return tokenObject.Token;
         }
 
-        // public async Task<List<SignTask>> GetSignTasksAsync(string courseId, string classId)
-        // {
-        //     RestClient client = new RestClient("https://mobilelearn.chaoxing.com")
-        //     {
-        //         CookieContainer = _Cookie
-        //     };
-        //     var request = new RestRequest("v2/apis/active/student/activelist");
-        //     request.AddParameter("fid", "0");
-        //     request.AddParameter("courseId", courseId);
-        //     request.AddParameter("classId", classId);
-        //     var response = await client.ExecuteGetAsync(request);
-        //     if (response.StatusCode != HttpStatusCode.OK)
-        //         throw new Exception("非200状态响应");
-        //     var json = JObject.Parse(response.Content);
-        //     if (json["result"].Value<int>() != 1)
-        //         new Exception(json["msg"].Value<string>());
-        //     var taskJArray = JArray.FromObject(json["data"]["activeList"]);
-        //     return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).OrderByDescending(x => x.StartTime).ToList();
-        // }
+        public async Task<JArray> GetSignTasksAsync(string courseId, string classId)
+        {
+            var client = new RestClient("https://mobilelearn.chaoxing.com")
+            {
+                CookieContainer = _cookie
+            };
+            var request = new RestRequest("v2/apis/active/student/activelist");
+            request.AddParameter("fid", "0");
+            request.AddParameter("courseId", courseId);
+            request.AddParameter("classId", classId);
+            var response = await client.ExecuteGetAsync(request);
+            TestResponseCode(response);
+            var json = JObject.Parse(response.Content);
+            if (json["result"]!.Value<int>() != 1)
+                throw new Exception(json["msg"]?.Value<string>());
+            return (JArray)json["data"]!["activeList"];
+        }
 
         public async Task<JToken> GetActiveDetailAsync(string activeId)
         {
@@ -109,7 +109,7 @@ namespace CxSignHelper
             return json["data"];
         }
 
-        public async Task SignAsync(string activeId, SignOptions signOptions)
+        public async Task<string> SignAsync(string activeId, SignOptions signOptions)
         {
             var client = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
             {
@@ -126,8 +126,7 @@ namespace CxSignHelper
             request.AddParameter("address", signOptions.Address);
             request.AddParameter("objectId", signOptions.ImageId);
             var response = await client.ExecuteGetAsync(request);
-            if (response.Content is "success" or "您已签到过了") return;
-            throw new Exception($"签到出错: {response.Content}");
+            return response.Content;
         }
 
         public async Task<(string ImToken, string TUid)> GetImTokenAsync()

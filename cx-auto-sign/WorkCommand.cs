@@ -4,7 +4,6 @@ using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -58,6 +57,7 @@ namespace cx_auto_sign
             if (webApi != null)
             {
                 string rule = null;
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
                 if (webApi.Type == JTokenType.Boolean)
                 {
                     if (webApi.Value<bool>())
@@ -99,7 +99,7 @@ namespace cx_auto_sign
                 _ws.ReconnectionHappened.Subscribe(info =>
                     Log.Warning("CXIM: Reconnection happened, type: {Type}", info.Type));
 
-                _ws.MessageReceived.Subscribe(async msg =>
+                async void OnMessageReceived(ResponseMessage msg)
                 {
                     try
                     {
@@ -114,110 +114,79 @@ namespace cx_auto_sign
                         }
 
                         if (!msg.Text.StartsWith("a")) return;
-                        var array = JArray.Parse(msg.Text[1..]);
-                        foreach (var token in array)
+                        var arrMsg = JArray.Parse(msg.Text[1..]);
+                        foreach (var message in arrMsg)
                         {
                             Logger log = null;
                             try
                             {
-                                var str = token.Value<string>();
-                                var pkgBytes = Convert.FromBase64String(str);
+                                var pkgBytes = Convert.FromBase64String(message.Value<string>());
                                 if (pkgBytes.Length <= 5)
                                 {
                                     continue;
                                 }
-                                var bytes = new byte[5];
-                                Array.Copy(pkgBytes, bytes, 5);
-                                if (bytes.SequenceEqual(new byte[] {0x08, 0x00, 0x40, 0x02, 0x4a}))
-                                {
-                                    Log.Information("接收到课程消息并请求获取活动信息");
-                                    bytes = (byte[]) pkgBytes.Clone();
-                                    bytes[3] = 0x00;
-                                    bytes[6] = 0x1a;
-                                    bytes = bytes.Concat(new byte[] {0x58, 0x00}).ToArray();
-                                    var message = Cxim.Pack(bytes);
-                                    Log.Information($"CXIM: Message send: {message}");
-                                    _ws.Send(message);
-                                    continue;
-                                }
 
-                                if (!bytes.SequenceEqual(new byte[] {0x08, 0x00, 0x40, 0x00, 0x4a}))
+                                var header = new byte[5];
+                                Array.Copy(pkgBytes, header, 5);
+                                if (!header.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a }))
                                 {
                                     continue;
                                 }
 
-                                Log.Information("接收到课动活动消息");
+                                Log.Information("接收到课程消息");
 
-                                log = new LoggerConfiguration()
-                                    .WriteTo.Notification(auConfig)
+                                string chatId;
+                                try
+                                {
+                                    chatId = Cxim.GetChatId(pkgBytes);
+                                }
+                                catch (Exception e)
+                                {
+                                    throw new Exception("解析失败，无法获取 ChatId", e);
+                                }
+
+                                log = new LoggerConfiguration().WriteTo.Notification(auConfig)
                                     .WriteTo.Console()
                                     .CreateLogger();
+                                log.Information("ChatId: {s}", chatId);
 
-                                var chatId = Cxim.GetChatId(pkgBytes);
-                                if (chatId == null)
+                                var course = userConfig.GetCourse(chatId);
+                                log.Information("获取 {s} 签到任务中", course.CourseName);
+                                var courseConfig = new CourseConfig(appConfig, userConfig, course);
+                                var tasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
+                                await Task.Delay(courseConfig.SignDelay * 1000);
+                                if (tasks.Count == 0)
                                 {
-                                    Log.Error("解析失败，无法获取 ChatId");
-                                    log = null;
-                                    continue;
-                                }
-                                log.Information("ChatId: " + chatId);
-
-                                var obj = Cxim.GetAttachment(pkgBytes)?["att_chat_course"];
-                                if (obj == null)
-                                {
-                                    Log.Warning("解析失败，无法获取 JSON");
+                                    Log.Error("没有活动任务");
                                     log = null;
                                     continue;
                                 }
 
-                                var activeId = obj["aid"]?.Value<string>();
-                                if (activeId is null or "0")
+                                var task = tasks[0];
+                                var type = task["type"];
+                                if (type?.Type != JTokenType.Integer || type.Value<int>() != 2)
                                 {
-                                    Log.Error("解析失败，未找到 ActiveId");
-                                    Log.Error(obj.ToString());
+                                    Log.Warning("不是签到任务");
                                     log = null;
                                     continue;
                                 }
-                                log.Information("ActiveId: " + activeId);
 
-                                var courseInfo = obj["courseInfo"];
-                                if (courseInfo == null)
+                                var activeId = task["id"]?.ToString();
+                                if (string.IsNullOrEmpty(activeId))
                                 {
-                                    Log.Error("解析失败，未找到 courseInfo");
-                                    Log.Error(obj.ToString());
+                                    Log.Error("解析失败，ActiveId 为空");
+                                    log = null;
+                                    continue;
                                 }
-                                var courseName = courseInfo?["coursename"]?.Value<string>();
-                                log.Information($"收到来自「{courseName}」的活动");
+                                log.Information("准备签到 ActiveId: {s}", activeId);
 
                                 var data = await client.GetActiveDetailAsync(activeId);
-                                // 是否为签到消息
-                                if (data["activeType"]?.Value<int>() != 2)
-                                {
-                                    Log.Information("活动不是签到");
-                                    continue;
-                                }
-
-                                // WebApi 设置
-                                if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
-                                {
-                                    log.Information("因 WebApi 设置，跳过签到");
-                                    continue;
-                                }
-
-                                // 签到流程
-                                var course = userConfig.GetCourse(chatId);
-                                var courseConfig = new CourseConfig(appConfig, userConfig, course);
-                                if (!courseConfig.SignEnable)
-                                {
-                                    log.Information("因用户配置，跳过签到");
-                                    continue;
-                                }
-
                                 var signType = GetSignType(data);
-                                log.Information("签到类型：" + GetSignTypeName(signType));
+                                log.Information("签到类型：{s}", GetSignTypeName(signType));
+                                // ReSharper disable once ConvertIfStatementToSwitchStatement
                                 if (signType == SignType.Gesture)
                                 {
-                                    log.Information("手势：" + data["signCode"]?.Value<string>());
+                                    log.Information("手势：{s}", data["signCode"]?.Value<string>());
                                 }
                                 else if (signType == SignType.Qr)
                                 {
@@ -225,7 +194,19 @@ namespace cx_auto_sign
                                     continue;
                                 }
 
-                                var signOptions = courseConfig.GetSignOptions(signType.ToString());
+                                if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
+                                {
+                                    log.Information("因 WebApi 设置，跳过签到");
+                                    continue;
+                                }
+
+                                if (!courseConfig.SignEnable)
+                                {
+                                    log.Information("因用户配置，跳过签到");
+                                    continue;
+                                }
+
+                                var signOptions = courseConfig.GetSignOptions(signType);
                                 if (signOptions == null)
                                 {
                                     log.Warning("因用户课程配置，跳过签到");
@@ -237,10 +218,21 @@ namespace cx_auto_sign
                                     signOptions.ImageId = await courseConfig.GetImageIdAsync(client);
                                 }
 
-                                await Task.Delay(courseConfig.SignDelay * 1000);
                                 log.Information("开始签到");
-                                await client.SignAsync(activeId, signOptions);
-                                log.Information("签到完成");
+                                var content = await client.SignAsync(activeId, signOptions);
+                                switch (content)
+                                {
+                                    case  "success":
+                                        content = "签到完成";
+                                        break;
+                                    case "您已签到过了":
+                                        content = "已签到";
+                                        break;
+                                    default:
+                                        log.Error("签到失败");
+                                        break;
+                                }
+                                log.Information(content);
                             }
                             catch (Exception e)
                             {
@@ -253,14 +245,19 @@ namespace cx_auto_sign
                                     log.Error(e.ToString());
                                 }
                             }
-                            log?.Dispose();
+                            finally
+                            {
+                                log?.Dispose();
+                            }
                         }
                     }
                     catch (Exception e)
                     {
                         Log.Error(e.ToString());
                     }
-                });
+                }
+
+                _ws.MessageReceived.Subscribe(OnMessageReceived);
                 await _ws.Start();
                 exitEvent.WaitOne();
             }

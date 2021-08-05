@@ -33,10 +33,10 @@ namespace cx_auto_sign
         public static readonly JObject Default = new()
         {
             [nameof(SignEnable)] = false,
-            [GetSignTypeKey(nameof(SignType.Normal))] = true,
-            [GetSignTypeKey(nameof(SignType.Gesture))] = true,
-            [GetSignTypeKey(nameof(SignType.Photo))] = true,
-            [GetSignTypeKey(nameof(SignType.Location))] = true,
+            [GetSignTypeKey(SignType.Normal)] = true,
+            [GetSignTypeKey(SignType.Gesture)] = true,
+            [GetSignTypeKey(SignType.Photo)] = true,
+            [GetSignTypeKey(SignType.Location)] = true,
             [nameof(SignDelay)] = 0,
             [nameof(SignAddress)] = "中国",
             [nameof(SignLatitude)] = "-1",
@@ -44,11 +44,11 @@ namespace cx_auto_sign
             [nameof(SignClientIp)] = "1.1.1.1"
         };
 
-        public CourseConfig(BaseDataConfig app, BaseDataConfig user, JToken course)
+        public CourseConfig(BaseDataConfig app, BaseDataConfig user, BaseDataConfig course)
         {
             _app = app.GetData();
             _user = user.GetData();
-            _course = course;
+            _course = course.GetData();
         }
 
         protected override JToken Get(string key)
@@ -59,12 +59,12 @@ namespace cx_auto_sign
                    Get(Default[key]);
         }
 
-        private static string GetSignTypeKey(string type)
+        private static string GetSignTypeKey(SignType type)
         {
             return "Sign" + type;
         }
 
-        public SignOptions GetSignOptions(string type)
+        public SignOptions GetSignOptions(SignType type)
         {
             var config = Get(GetSignTypeKey(type));
             if (config?.Type == JTokenType.Boolean && config.Value<bool>() == false)
@@ -104,6 +104,7 @@ namespace cx_auto_sign
                 return set;
             }
             var type = photo.Type;
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (type == JTokenType.String)
             {
                 GetImage(set, photo);
