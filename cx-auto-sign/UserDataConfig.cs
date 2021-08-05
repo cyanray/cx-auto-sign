@@ -82,9 +82,9 @@ namespace cx_auto_sign
         {
             if (!Directory.Exists(Dir))
             {
-                Log.Debug("没有用户配置文件夹，并创建：" + Dir);
+                Log.Debug("没有用户配置文件夹，并创建：{Dir}", Dir);
                 Directory.CreateDirectory(Dir);
-                Log.Debug("已创建用户配置文件夹：" + Dir);
+                Log.Debug("已创建用户配置文件夹：{Dir}", Dir);
             }
             Log.Debug("保存用户配置中...");
             File.WriteAllText(_path, _data.ToString());
@@ -112,19 +112,17 @@ namespace cx_auto_sign
 
         public async Task UpdateAsync()
         {
-            Log.Information("正在登录 {User}...", Username);
-            CxSignClient client;
-            if (string.IsNullOrEmpty(Fid))
-                client = await CxSignClient.LoginAsync(Username, Password);
-            else
-                client = await CxSignClient.LoginAsync(Username, Password, Fid);
-            Log.Information("成功登录账号 {User} ", Username);
+            Log.Information("正在登录账号：{Username}", Username);
+            var client = await CxSignClient.LoginAsync(Username, Password, Fid);
+            Log.Information("成功登录账号");
 
             Log.Information("获取课程数据中...");
             await client.GetCoursesAsync(_courses);
             foreach (var (_, course) in _courses)
             {
-                Log.Information($"发现课程：{course["CourseName"]}-{course["ClassName"]} ({course["CourseId"]}, {course["CourseId"]})");
+                Log.Information("发现课程：{CourseName}-{ClassName} ({CourseId}, {ClassId})",
+                    course["CourseName"], course["ClassName"],
+                    course["CourseId"], course["ClassId"]);
             }
             Save();
         }
@@ -156,7 +154,7 @@ namespace cx_auto_sign
                 }
                 catch (Exception e)
                 {
-                    Log.Error(e.ToString());
+                    Log.Error(e, "更新失败");
                 }
             }
         }

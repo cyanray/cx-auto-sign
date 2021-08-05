@@ -36,15 +36,16 @@ namespace cx_auto_sign
 
         public void Dispose()
         {
-            if (_stringBuilder.Length == 0)
+            if (_stringBuilder.Length != 0)
             {
-                return;
+                var str = _stringBuilder.ToString();
+                NotifyByEmail(Title, str, _userConfig.Email, _userConfig.SmtpHost, _userConfig.SmtpPort,
+                    _userConfig.SmtpUsername, _userConfig.SmtpPassword, _userConfig.SmtpSecure);
+                NotifyByServerChan(_userConfig.ServerChanKey, Title, str);
+                NotifyByPushPlus(_userConfig.PushPlusToken, Title, str);
+                _stringBuilder.Clear();
             }
-            var str = _stringBuilder.ToString();
-            NotifyByEmail(Title, str, _userConfig.Email, _userConfig.SmtpHost, _userConfig.SmtpPort,
-                _userConfig.SmtpUsername, _userConfig.SmtpPassword, _userConfig.SmtpSecure);
-            NotifyByServerChan(_userConfig.ServerChanKey, Title, str);
-            NotifyByPushPlus(_userConfig.PushPlusToken, Title, str);
+            GC.SuppressFinalize(this);
         }
 
         private static void NotifyByEmail(string subject, string text, string email, string host, int port,
@@ -84,8 +85,7 @@ namespace cx_auto_sign
             }
             catch (Exception e)
             {
-                Log.Error("发送邮件通知失败!");
-                Log.Error(e.ToString());
+                Log.Error(e, "发送邮件通知失败!");
             }
         }
 
@@ -116,8 +116,7 @@ namespace cx_auto_sign
             }
             catch (Exception e)
             {
-                Log.Error("发送 ServerChan 通知失败!");
-                Log.Error(e.ToString());
+                Log.Error(e, "发送 ServerChan 通知失败!");
             }
         }
 
@@ -152,8 +151,7 @@ namespace cx_auto_sign
             }
             catch (Exception e)
             {
-                Log.Error("发送 PushPlus 通知失败!");
-                Log.Error(e.ToString());
+                Log.Error(e, "发送 PushPlus 通知失败!");
             }
         }
     }

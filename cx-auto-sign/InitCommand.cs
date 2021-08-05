@@ -32,7 +32,7 @@ namespace cx_auto_sign
             var appConfig = new AppDataConfig();
             if (IsSetDefault || appConfig.DefaultUsername == null)
             {
-                Log.Information("设置为默认用户：" + Username);
+                Log.Information("将 {Username} 设置为默认用户", Username);
                 appConfig.DefaultUsername = Username;
                 appConfig.Save();
             }

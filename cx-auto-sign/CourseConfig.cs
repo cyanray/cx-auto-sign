@@ -184,7 +184,7 @@ namespace cx_auto_sign
             }
             catch (Exception e)
             {
-                Log.Error(e.ToString());
+                Log.Error(e, "上传图片失败：{Path}", path);
             }
             ImageCache[hash] = id;
             return ImageNoneId;

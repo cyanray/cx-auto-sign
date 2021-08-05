@@ -39,17 +39,9 @@ namespace cx_auto_sign
             var password = userConfig.Password;
             var fid = userConfig.Fid;
 
-            Log.Information("登录账号 {Username} 中...", username);
-            CxSignClient client;
-            if (string.IsNullOrEmpty(fid))
-            {
-                client = await CxSignClient.LoginAsync(username, password);
-            }
-            else
-            {
-                client = await CxSignClient.LoginAsync(username, password, fid);
-            }
-            Log.Information("登录账号 {Username} 成功", username);
+            Log.Information("正在登录账号：{Username}", username);
+            var client = await CxSignClient.LoginAsync(username, password, fid);
+            Log.Information("成功登录账号");
             var (imToken, uid) = await client.GetImTokenAsync();
 
             var enableWeiApi = false;
@@ -103,12 +95,12 @@ namespace cx_auto_sign
                 {
                     try
                     {
-                        Log.Information($"CXIM: Message received: {msg}");
+                        Log.Information("CXIM: Message received: {Message}", msg);
                         if (msg.Text.StartsWith("o"))
                         {
-                            Log.Information("Websocket 登录");
+                            Log.Information("CXIM 登录");
                             var loginPackage = Cxim.BuildLoginPackage(uid, imToken);
-                            Log.Information($"CXIM: Message send: {loginPackage}");
+                            Log.Information("CXIM: Message send: {Message}", loginPackage);
                             _ws.Send(loginPackage);
                             return;
                         }
@@ -148,10 +140,10 @@ namespace cx_auto_sign
                                 log = new LoggerConfiguration().WriteTo.Notification(auConfig)
                                     .WriteTo.Console()
                                     .CreateLogger();
-                                log.Information("ChatId: {s}", chatId);
+                                log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
-                                log.Information("获取 {s} 签到任务中", course.CourseName);
+                                log.Information("获取 {CourseName} 签到任务中", course.CourseName);
                                 var courseConfig = new CourseConfig(appConfig, userConfig, course);
                                 var tasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
                                 await Task.Delay(courseConfig.SignDelay * 1000);
@@ -178,15 +170,15 @@ namespace cx_auto_sign
                                     log = null;
                                     continue;
                                 }
-                                log.Information("准备签到 ActiveId: {s}", activeId);
+                                log.Information("准备签到 ActiveId: {ActiveId}", activeId);
 
                                 var data = await client.GetActiveDetailAsync(activeId);
                                 var signType = GetSignType(data);
-                                log.Information("签到类型：{s}", GetSignTypeName(signType));
+                                log.Information("签到类型：{Type}", GetSignTypeName(signType));
                                 // ReSharper disable once ConvertIfStatementToSwitchStatement
                                 if (signType == SignType.Gesture)
                                 {
-                                    log.Information("手势：{s}", data["signCode"]?.Value<string>());
+                                    log.Information("手势：{Code}", data["signCode"]?.Value<string>());
                                 }
                                 else if (signType == SignType.Qr)
                                 {
@@ -226,7 +218,6 @@ namespace cx_auto_sign
                                         content = "签到完成";
                                         break;
                                     case "您已签到过了":
-                                        content = "已签到";
                                         break;
                                     default:
                                         log.Error("签到失败");
@@ -236,14 +227,7 @@ namespace cx_auto_sign
                             }
                             catch (Exception e)
                             {
-                                if (log == null)
-                                {
-                                    Log.Error(e.ToString());
-                                }
-                                else
-                                {
-                                    log.Error(e.ToString());
-                                }
+                                (log ?? Log.Logger).Error(e, "CXIM 接收到课程消息时出错");
                             }
                             finally
                             {
@@ -253,7 +237,7 @@ namespace cx_auto_sign
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e.ToString());
+                        Log.Error(e, "CXIM 接收到消息处理时出错");
                     }
                 }
 
