@@ -14,7 +14,7 @@ namespace cx_auto_sign
         // Email
         public readonly string Email;
         public readonly string SmtpHost;
-        public readonly int SmtpPort;
+        public readonly int    SmtpPort;
         public readonly string SmtpUsername;
         public readonly string SmtpPassword;
         public readonly bool   SmtpSecure;
@@ -37,8 +37,8 @@ namespace cx_auto_sign
             _app = app.GetData();
             _user = user.GetData();
 
-            ServerChanKey = GetString(nameof(ServerChanKey));
-            PushPlusToken = GetString(nameof(PushPlusToken));
+            ServerChanKey = GetMustString(nameof(ServerChanKey));
+            PushPlusToken = GetMustString(nameof(PushPlusToken));
 
             Email = GetMustString(nameof(Email));
             SmtpHost = GetString(nameof(SmtpHost));
