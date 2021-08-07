@@ -93,6 +93,7 @@ namespace cx_auto_sign
 
                 async void OnMessageReceived(ResponseMessage msg)
                 {
+                    var startTime = DateTime.Now.Ticks;
                     try
                     {
                         Log.Information("CXIM: Message received: {Message}", msg);
@@ -150,7 +151,6 @@ namespace cx_auto_sign
                                 log.Information("获取 {CourseName} 签到任务中", course.CourseName);
                                 var courseConfig = new CourseConfig(appConfig, userConfig, course);
                                 var tasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
-                                await Task.Delay(courseConfig.SignDelay * 1000);
                                 if (tasks.Count == 0)
                                 {
                                     Log.Error("没有活动任务");
@@ -214,6 +214,20 @@ namespace cx_auto_sign
                                     signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
                                     log.Information("预览：{Url}",
                                         $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
+                                }
+
+                                var runTime = (DateTime.Now.Ticks - startTime) / 1e4;
+                                log.Information("签到准备完毕，耗时：{Time}ms", runTime);
+                                var delay = courseConfig.SignDelay;
+                                log.Information("用户配置延迟签到：{Time}s", delay);
+                                if (delay > 0)
+                                {
+                                    delay = (int)(delay * 1000 - runTime);
+                                    if (delay > 0)
+                                    {
+                                        log.Information("将等待：{Delay}ms", delay);
+                                        await Task.Delay(delay);
+                                    }
                                 }
 
                                 log.Information("开始签到");
