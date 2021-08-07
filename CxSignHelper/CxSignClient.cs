@@ -178,8 +178,8 @@ namespace CxSignHelper
                     ["CourseId"] = courseId,
                     ["ClassId"] = classId,
                     ["ChatId"] = chatId,
-                    ["ClassName"] = className,
-                    ["CourseName"] = courseName
+                    ["CourseName"] = courseName,
+                    ["ClassName"] = className
                 };
                 course[chatId] = obj;
             }
@@ -208,6 +208,10 @@ namespace CxSignHelper
 
         public async Task<string> UploadImageAsync(string path)
         {
+            // 预览：
+            // https://p.ananas.chaoxing.com/star3/170_220c/f5b88e10d3dfedf9829ca8c009029e7b.png
+            // https://p.ananas.chaoxing.com/star3/origin/f5b88e10d3dfedf9829ca8c009029e7b.png
+            // https://pan-yz.chaoxing.com/thumbnail/origin/f5b88e10d3dfedf9829ca8c009029e7b?type=img
             var client = new RestClient("https://pan-yz.chaoxing.com/upload")
             {
                 CookieContainer = _cookie

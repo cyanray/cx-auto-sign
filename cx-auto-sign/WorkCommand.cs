@@ -140,7 +140,8 @@ namespace cx_auto_sign
                                     throw new Exception("解析失败，无法获取 ChatId", e);
                                 }
 
-                                log = new LoggerConfiguration().WriteTo.Notification(auConfig)
+                                log = new LoggerConfiguration()
+                                    .WriteTo.Notification(auConfig)
                                     .WriteTo.Console()
                                     .CreateLogger();
                                 log.Information("ChatId: {ChatId}", chatId);
@@ -210,7 +211,9 @@ namespace cx_auto_sign
 
                                 if (signType == SignType.Photo)
                                 {
-                                    signOptions.ImageId = await courseConfig.GetImageIdAsync(client);
+                                    signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
+                                    log.Information("预览：{Url}",
+                                        $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
                                 }
 
                                 log.Information("开始签到");

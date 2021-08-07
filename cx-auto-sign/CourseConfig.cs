@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using CxSignHelper;
 using CxSignHelper.Models;
@@ -17,7 +15,7 @@ namespace cx_auto_sign
         private const string ImageDir = "Images";
         private const string ImageNoneId = "041ed4756ca9fdf1f9b6dde7a83f8794";
 
-        private static readonly Hashtable ImageCache = new();
+        private static readonly string[] ImageSuffixes = { "png", "jpg", "jpeg", "bmp", "gif", "webp" };
 
         private readonly JToken _app;
         private readonly JToken _user;
@@ -48,7 +46,7 @@ namespace cx_auto_sign
         {
             _app = app.GetData();
             _user = user.GetData();
-            _course = course.GetData();
+            _course = course?.GetData();
         }
 
         protected override JToken Get(string key)
@@ -91,111 +89,114 @@ namespace cx_auto_sign
             {
                 path = Path.Combine(ImageDir, path!);
             }
-
-            return Path.GetFileName(path);
+            return Path.GetFullPath(path);
         }
 
         private IEnumerable<string> GetImageSet()
         {
             var set = new HashSet<string>();
-            var photo = Get(SignType.Photo.ToString());
-            if (photo == null)
+            var photo = Get(GetSignTypeKey(SignType.Photo));
+            // ReSharper disable once InvertIf
+            if (photo != null)
             {
-                return set;
-            }
-            var type = photo.Type;
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (type == JTokenType.String)
-            {
-                GetImage(set, photo);
-            }
-            else if (type == JTokenType.Array)
-            {
-                foreach (var token in photo)
+                var type = photo.Type;
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
+                if (type == JTokenType.String)
                 {
-                    if (token.Type == JTokenType.String)
+                    AddToImageSet(set, photo);
+                }
+                else if (type == JTokenType.Array)
+                {
+                    foreach (var token in photo)
                     {
-                        GetImage(set, token);
+                        if (token.Type == JTokenType.String)
+                        {
+                            AddToImageSet(set, token);
+                        }
                     }
                 }
             }
             return set;
         }
-        
-        private static void GetImage(ISet<string> set, string path)
+
+        private static void AddFileToImageSet(ISet<string> set, string path)
         {
-            if (path == null)
+            var name = Path.GetFileName(path);
+            var index = name.LastIndexOf('.') + 1;
+            if (index == 0)
+            {
+                return;
+            }
+            var suffix = name[index..].ToLower();
+            if (!ImageSuffixes.Contains(suffix))
+            {
+                return;
+            }
+            set.Add(path);
+        }
+
+        private static void AddToImageSet(ISet<string> set, string path)
+        {
+            if (string.IsNullOrEmpty(path))
             {
                 set.Add("");
+                return;
             }
-            else if (File.Exists(path))
+            if (File.Exists(path))
             {
-                set.Add(path);
+                AddFileToImageSet(set, path);
             }
             else if (Directory.Exists(path))
             {
-                GetImageDir(set, path);
+                AddDirToImageSet(set, path);
             }
         }
-    
-        private static void GetImage(ISet<string> set, JToken token)
+
+        private static void AddToImageSet(ISet<string> set, JToken token)
         {
-            GetImage(set, GetImageFullPath(token.Value<string>()));
+            AddToImageSet(set, GetImageFullPath(token.Value<string>()));
         }
 
-        private static void GetImageDir(ISet<string> set, string path)
+        private static void AddDirToImageSet(ISet<string> set, string path)
         {
             var infos = new DirectoryInfo(path).GetFileSystemInfos();
             foreach (var info in infos)
             {
+                var name = info.FullName;
                 if ((info.Attributes & FileAttributes.Directory) != 0)
                 {
-                    GetImageDir(set, info.FullName);
+                    AddDirToImageSet(set, name);
                 }
                 else
                 {
-                    set.Add(path);
+                    AddFileToImageSet(set, name);
                 }
             }
         }
 
-        public async Task<string> GetImageIdAsync(CxSignClient client)
+        public async Task<string> GetImageIdAsync(CxSignClient client, ILogger log)
         {
             var array = GetImageSet().ToArray();
             var length = array.Length;
-            if (length == 0)
+            if (length != 0)
             {
-                return ImageNoneId;
+                log.Information("将从这些图片中随机选择一张进行图片签到：{Array}", array);
+                var path = array[new Random().Next(length)];
+                if (!string.IsNullOrEmpty(path))
+                {
+                    log.Information("将使用这张照片进行图片签到：{Path}", path);
+                    try
+                    {
+                        return await client.UploadImageAsync(path);
+                    }
+                    catch (Exception e)
+                    {
+                        log.Error(e, "上传图片失败");
+                    }
+                }
             }
-            var path = array[new Random().Next(array.Length)];
-            if (string.IsNullOrEmpty(path))
-            {
-                return ImageNoneId;
-            }
-            var hash = GetHash(path);
-            var id = ImageCache[hash];
-            if (id != null)
-            {
-                return (string) id;
-            }
-            try
-            {
-                id = await client.UploadImageAsync(path);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "上传图片失败：{Path}", path);
-            }
-            ImageCache[hash] = id;
+            log.Information("将使用一张黑图进行图片签到");
             return ImageNoneId;
-        }
-
-        private static string GetHash(string path)
-        {
-            var file = new FileStream(path, FileMode.Open);
-            var bytes = new MD5CryptoServiceProvider().ComputeHash(file);
-            file.Close();
-            return Convert.ToHexString(bytes);
         }
     }
 }
