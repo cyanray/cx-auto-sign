@@ -39,14 +39,14 @@ cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
 在 cx-auto-sign.dll 所在的目录执行以下命令行（Windows 和 Linux都适用）：
 
-```powershell
+```shell
 # 通过手机号码登录，不需要学校编码
 dotnet ./cx-auto-sign.dll init -u "双引号里面填手机号" -p "双引号里面填密码" 
 ```
 
 **或：**
 
-```powershell
+```shell
 # 通过学号登录，需要学校编码
 dotnet ./cx-auto-sign.dll init -u "双引号里面填学号" -p "双引号里面填密码" -f "学校编码"
 ```
@@ -55,7 +55,7 @@ dotnet ./cx-auto-sign.dll init -u "双引号里面填学号" -p "双引号里面
 
 在 `cx-auto-sign.dll` 所在的目录执行以下命令行:
 
-```powershell
+```shell
 dotnet ./cx-auto-sign.dll work
 ```
 
@@ -185,7 +185,7 @@ WebApi 默认监听规则是 `http://localhost:5743`，可在配置文件中修�
 
 若要监听全部网卡的 5743 端口，可写为：`http://*:5743`。
 
-## 查看状态
+### 查看状态
 
 请求：`GET` `/status`
 
@@ -198,7 +198,7 @@ WebApi 默认监听规则是 `http://localhost:5743`，可在配置文件中修�
 }
 ```
 
-## 启动自动签到
+### 启动自动签到
 
 请求：`GET` `/status/enable`
 
@@ -211,7 +211,7 @@ WebApi 默认监听规则是 `http://localhost:5743`，可在配置文件中修�
 }
 ```
 
-## 停止自动签到
+### 停止自动签到
 
 请求：`GET` `/status/disable`
 
@@ -226,11 +226,11 @@ WebApi 默认监听规则是 `http://localhost:5743`，可在配置文件中修�
 
 </details>
 
-# FQA
+## FQA
 
-## 1. 如何关闭自动更新检测? 
+### 1. 如何关闭自动更新检测? 
 在 `cx-auto-sign.dll` 所在目录下创建一个名为 `.noupdate` 的文件。
 
-# 声明
+## 声明
 
 一切开发旨在学习，请勿用于非法用途。
