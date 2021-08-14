@@ -154,7 +154,7 @@ namespace cx_auto_sign
                                     .WriteTo.Notification(auConfig)
                                     .WriteTo.Console()
                                     .CreateLogger();
-                                log.Information("StartTime：{Time}", startTimestamp);
+                                log.Information("消息时间：{Time}", startTimestamp);
                                 log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
@@ -170,7 +170,7 @@ namespace cx_auto_sign
 
                                 var task = tasks[0];
                                 var taskStartTime = task["startTime"]!.Value<long>();
-                                Log.Information("TaskStartTime: {Time}", taskStartTime);
+                                log.Information("任务时间: {Time}", taskStartTime);
                                 if (taskStartTime - startTimestamp > 5000)
                                 {
                                     // 当教师发布作业的等操作也触发「接收到课程消息」
