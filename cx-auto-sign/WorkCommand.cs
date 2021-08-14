@@ -129,6 +129,12 @@ namespace cx_auto_sign
                                     continue;
                                 }
 
+                                if (pkgBytes[5] != 0x2b)
+                                {
+                                    Log.Warning("可能不是课程消息");
+                                    continue;
+                                }
+
                                 Log.Information("接收到课程消息");
 
                                 string chatId;
