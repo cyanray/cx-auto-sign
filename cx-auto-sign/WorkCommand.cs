@@ -23,6 +23,8 @@ namespace cx_auto_sign
 
         private WebsocketClient _ws;
 
+        private readonly DateTime _dateTime1970 = new(1970, 1, 1, 8, 0, 0);
+
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             var appConfig = new AppDataConfig();
@@ -93,7 +95,8 @@ namespace cx_auto_sign
 
                 async void OnMessageReceived(ResponseMessage msg)
                 {
-                    var startTime = DateTime.Now.Ticks;
+                    var startTime = DateTime.Now;
+                    var startTimestamp = (long) (startTime - _dateTime1970).TotalMilliseconds;
                     try
                     {
                         Log.Information("CXIM: Message received: {Message}", msg);
@@ -151,6 +154,7 @@ namespace cx_auto_sign
                                     .WriteTo.Notification(auConfig)
                                     .WriteTo.Console()
                                     .CreateLogger();
+                                log.Information("StartTime：{Time}", startTimestamp);
                                 log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
@@ -165,6 +169,17 @@ namespace cx_auto_sign
                                 }
 
                                 var task = tasks[0];
+                                var taskStartTime = task["startTime"]!.Value<long>();
+                                Log.Information("TaskStartTime: {Time}", taskStartTime);
+                                if (taskStartTime - startTimestamp > 5000)
+                                {
+                                    // 当教师发布作业的等操作也触发「接收到课程消息」
+                                    // 但这些操作不会体现在「活动列表」中
+                                    // 因此，这里通过活动开始的时间来判断接收到的是否是活动消息
+                                    Log.Warning("不是活动消息");
+                                    log = null;
+                                    continue;
+                                }
                                 var type = task["type"];
                                 if (type?.Type != JTokenType.Integer || type.Value<int>() != 2)
                                 {
@@ -222,7 +237,7 @@ namespace cx_auto_sign
                                         $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
                                 }
 
-                                var runTime = (DateTime.Now.Ticks - startTime) / 1e4;
+                                var runTime = (DateTime.Now - startTime).TotalMilliseconds;
                                 log.Information("签到准备完毕，耗时：{Time}ms", runTime);
                                 var delay = courseConfig.SignDelay;
                                 log.Information("用户配置延迟签到：{Time}s", delay);

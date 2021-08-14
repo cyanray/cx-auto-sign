@@ -8,7 +8,7 @@ namespace cx_auto_sign
 
         protected sealed override JToken Get(string key)
         {
-            return GetData()[key];
+            return GetData()?[key];
         }
 
         public override string ToString()
