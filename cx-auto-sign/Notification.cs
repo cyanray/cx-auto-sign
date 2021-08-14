@@ -32,6 +32,10 @@ namespace cx_auto_sign
                 .Append(' ')
                 .Append(logEvent.RenderMessage())
                 .Append('\n');
+            if (logEvent.Exception != null)
+            {
+                _stringBuilder.Append(logEvent.Exception).Append('\n');
+            }
         }
 
         public void Dispose()
