@@ -173,7 +173,7 @@ namespace cx_auto_sign
             }
         }
 
-        public static Logger CreateLogger(UserConfig userConfig, long startTime)
+        public static Logger CreateLogger(UserConfig userConfig, double startTime)
         {
             var console = new LoggerConfiguration()
                 .Enrich.WithProperty("StartTime", startTime)

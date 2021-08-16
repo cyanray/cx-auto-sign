@@ -16,14 +16,14 @@ namespace cx_auto_sign
     [Command(Description = "工作模式, 监听签到任务并自动签到")]
     public class WorkCommand : CommandBase
     {
+        private static readonly DateTime DateTime1970 = new(1970, 1, 1, 8, 0, 0);
+
         // ReSharper disable UnassignedGetOnlyAutoProperty
         [Option("-u", Description = "指定用户名（学号）")]
         private string Username { get; }
         // ReSharper restore UnassignedGetOnlyAutoProperty
 
         private WebsocketClient _ws;
-
-        private readonly DateTime _dateTime1970 = new(1970, 1, 1, 8, 0, 0);
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
@@ -95,8 +95,7 @@ namespace cx_auto_sign
 
                 async void OnMessageReceived(ResponseMessage msg)
                 {
-                    var startTime = DateTime.Now;
-                    var startTimestamp = (long) (startTime - _dateTime1970).TotalMilliseconds;
+                    var startTime = GetTimestamp();
                     try
                     {
                         Log.Information("CXIM: Message received: {Message}", msg);
@@ -150,8 +149,8 @@ namespace cx_auto_sign
                                     throw new Exception("解析失败，无法获取 ChatId", e);
                                 }
 
-                                log = Notification.CreateLogger(auConfig, startTimestamp);
-                                log.Information("消息时间：{Time}", startTimestamp);
+                                log = Notification.CreateLogger(auConfig, GetTimestamp());
+                                log.Information("消息时间：{Time}", startTime);
                                 log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
@@ -166,9 +165,11 @@ namespace cx_auto_sign
                                 }
 
                                 var task = tasks[0];
-                                var taskStartTime = task["startTime"]!.Value<long>();
-                                log.Information("任务时间: {Time}", taskStartTime);
-                                if (taskStartTime - startTimestamp > 5000)
+                                var taskTime = task["startTime"]!.Value<long>();
+                                log.Information("任务时间: {Time}", taskTime);
+                                var takenTime = taskTime - startTime;
+                                log.Information("消息与任务相差: {Time}ms", takenTime);
+                                if (takenTime > 5000)
                                 {
                                     // 当教师发布作业的等操作也触发「接收到课程消息」
                                     // 但这些操作不会体现在「活动列表」中
@@ -204,7 +205,7 @@ namespace cx_auto_sign
                                 }
                                 else if (signType == SignType.Qr)
                                 {
-                                    log.Information("暂时无法二维码签到");
+                                    log.Warning("暂时无法二维码签到");
                                     continue;
                                 }
 
@@ -233,14 +234,15 @@ namespace cx_auto_sign
                                     log.Information("预览：{Url}",
                                         $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
                                 }
-
-                                var runTime = (DateTime.Now - startTime).TotalMilliseconds;
-                                log.Information("签到准备完毕，耗时：{Time}ms", runTime);
+                                log.Information("签到准备完毕，耗时：{Time}ms",
+                                    GetTimestamp() - startTime);
+                                takenTime = GetTimestamp() - taskTime;
+                                log.Information("签到已发布：{Time}ms", takenTime);
                                 var delay = courseConfig.SignDelay;
                                 log.Information("用户配置延迟签到：{Time}s", delay);
                                 if (delay > 0)
                                 {
-                                    delay = (int)(delay * 1000 - runTime);
+                                    delay = (int) (delay * 1000 - takenTime);
                                     if (delay > 0)
                                     {
                                         log.Information("将等待：{Delay}ms", delay);
@@ -319,6 +321,11 @@ namespace cx_auto_sign
                 SignType.Location => "位置签到",
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
+        }
+
+        private static double GetTimestamp()
+        {
+            return (DateTime.Now - DateTime1970).TotalMilliseconds;
         }
     }
 }
