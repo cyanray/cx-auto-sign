@@ -150,10 +150,7 @@ namespace cx_auto_sign
                                     throw new Exception("解析失败，无法获取 ChatId", e);
                                 }
 
-                                log = new LoggerConfiguration()
-                                    .WriteTo.Notification(auConfig)
-                                    .WriteTo.Console()
-                                    .CreateLogger();
+                                log = Notification.CreateLogger(auConfig, startTimestamp);
                                 log.Information("消息时间：{Time}", startTimestamp);
                                 log.Information("ChatId: {ChatId}", chatId);
 
