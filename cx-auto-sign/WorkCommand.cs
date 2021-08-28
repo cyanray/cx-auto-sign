@@ -167,7 +167,7 @@ namespace cx_auto_sign
                                 var task = tasks[0];
                                 var taskTime = task["startTime"]!.Value<long>();
                                 log.Information("任务时间: {Time}", taskTime);
-                                var takenTime = taskTime - startTime;
+                                var takenTime = startTime - taskTime;
                                 log.Information("消息与任务相差: {Time}ms", takenTime);
                                 if (takenTime > 5000)
                                 {
