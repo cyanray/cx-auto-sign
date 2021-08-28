@@ -11,12 +11,15 @@ using Serilog.Events;
 
 namespace cx_auto_sign
 {
-    public class Notification : ILogEventSink, IDisposable
+    public class Notification : ILogEventSink
     {
         private const string Title = "cx-auto-sign 自动签到通知";
         private readonly StringBuilder _stringBuilder = new();
         private readonly UserConfig _userConfig;
         private readonly Logger _log;
+
+        private string _title;
+        private bool? _ok;
 
         private Notification(Logger log, UserConfig userConfig)
         {
@@ -26,6 +29,34 @@ namespace cx_auto_sign
 
         public void Emit(LogEvent logEvent)
         {
+            if (logEvent.Level == LogEventLevel.Error)
+            {
+                bool? b;
+                if ((b = GetBool(logEvent, nameof(Status))) != null)
+                {
+                    _ok = b;
+                    return;
+                }
+                if ((b = GetBool(logEvent, nameof(Send))) != null && b == true)
+                {
+                    if (_stringBuilder.Length == 0)
+                    {
+                        return;
+                    }
+                    if (_ok != null)
+                    {
+                        var status = _ok == true ? '✔' : '✖';
+                        _stringBuilder.Insert(0, "自动签到 " + status + '\n');
+                        _title = Title + ' ' + status;
+                    }
+                    var content = _stringBuilder.ToString();
+                    NotifyByEmail(content);
+                    NotifyByServerChan(content);
+                    NotifyByPushPlus(content);
+                    return;
+                }
+            }
+            _log.Write(logEvent);
             _stringBuilder
                 .Append(logEvent.Timestamp.ToString("HH:mm:ss"))
                 .Append(' ')
@@ -39,16 +70,39 @@ namespace cx_auto_sign
             }
         }
 
-        public void Dispose()
+        private string GetTitle()
         {
-            if (_stringBuilder.Length != 0)
+            return _title ?? Title;
+        }
+
+        private static bool? GetBool(LogEvent logEvent, string name)
+        {
+            if (logEvent.Properties.TryGetValue(name, out var value)
+                && bool.TryParse(value.ToString(), out var b))
             {
-                var content = _stringBuilder.ToString();
-                NotifyByEmail(content);
-                NotifyByServerChan(content);
-                NotifyByPushPlus(content);
+                return b;
             }
-            GC.SuppressFinalize(this);
+            return null;
+        }
+
+        private static void WriteBool(ILogger log, string name, bool b)
+        {
+            log.Write(new LogEvent(DateTimeOffset.Now, LogEventLevel.Error, null, MessageTemplate.Empty,
+                new LogEventProperty[]
+                {
+                    new(name, new ScalarValue(b))
+                })
+            );
+        }
+
+        public static void Status(ILogger log, bool ok)
+        {
+            WriteBool(log, nameof(Status), ok);
+        }
+
+        public static void Send(ILogger log)
+        {
+            WriteBool(log, nameof(Send), true);
         }
 
         private static void NotifyByEmail(string subject, string text, string email, string host, int port,
@@ -86,7 +140,7 @@ namespace cx_auto_sign
             try
             {
                 _log.Information("正在发送邮件通知");
-                NotifyByEmail(Title, content,
+                NotifyByEmail(GetTitle(), content,
                     _userConfig.Email, _userConfig.SmtpHost, _userConfig.SmtpPort,
                     _userConfig.SmtpUsername, _userConfig.SmtpPassword, _userConfig.SmtpSecure);
                 _log.Information("已发送邮件通知");
@@ -125,7 +179,7 @@ namespace cx_auto_sign
             try
             {
                 _log.Information("正在发送 ServerChan 通知");
-                NotifyByServerChan(_userConfig.ServerChanKey, Title, content);
+                NotifyByServerChan(_userConfig.ServerChanKey, GetTitle(), content);
                 _log.Information("已发送 ServerChan 通知");
             }
             catch (Exception e)
@@ -164,7 +218,7 @@ namespace cx_auto_sign
             try
             {
                 _log.Information("正在发送 PushPlus 通知");
-                NotifyByPushPlus(_userConfig.PushPlusToken, Title, content);
+                NotifyByPushPlus(_userConfig.PushPlusToken, GetTitle(), content);
                 _log.Information("已发送 PushPlus 通知");
             }
             catch (Exception e)
@@ -182,7 +236,6 @@ namespace cx_auto_sign
                 .CreateLogger();
             return new LoggerConfiguration()
                 .WriteTo.Sink(new Notification(console, userConfig))
-                .WriteTo.Logger(console)
                 .CreateLogger();
         }
     }

@@ -251,19 +251,23 @@ namespace cx_auto_sign
                                 }
 
                                 log.Information("开始签到");
+                                var ok = false;
                                 var content = await client.SignAsync(activeId, signOptions);
                                 switch (content)
                                 {
                                     case  "success":
                                         content = "签到完成";
+                                        ok = true;
                                         break;
                                     case "您已签到过了":
+                                        ok = true;
                                         break;
                                     default:
                                         log.Error("签到失败");
                                         break;
                                 }
                                 log.Information(content);
+                                Notification.Status(log, ok);
                             }
                             catch (Exception e)
                             {
@@ -271,7 +275,10 @@ namespace cx_auto_sign
                             }
                             finally
                             {
-                                log?.Dispose();
+                                if (log != null)
+                                {
+                                    Notification.Send(log);
+                                }
                             }
                         }
                     }

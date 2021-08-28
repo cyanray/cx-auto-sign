@@ -34,8 +34,8 @@ namespace cx_auto_sign
 
         public UserConfig(BaseDataConfig app, BaseDataConfig user)
         {
-            _app = app.GetData();
-            _user = user.GetData();
+            _app = app?.GetData();
+            _user = user?.GetData();
 
             ServerChanKey = GetMustString(nameof(ServerChanKey));
             PushPlusToken = GetMustString(nameof(PushPlusToken));
