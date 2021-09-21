@@ -24,8 +24,8 @@ namespace cx_auto_sign
         public bool SignEnable => GetBool(nameof(SignEnable));
         public int SignDelay => GetInt(nameof(SignDelay));
         public string SignAddress => GetString(nameof(SignAddress));
-        public string SignLatitude => GetString(nameof(SignLatitude));
         public string SignLongitude => GetString(nameof(SignLongitude));
+        public string SignLatitude => GetString(nameof(SignLatitude));
         public string SignClientIp => GetString(nameof(SignClientIp));
 
         public static readonly JObject Default = new()
