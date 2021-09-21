@@ -1,117 +1,129 @@
 ﻿using CxSignHelper.Models;
-using CxSignHelper.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CxSignHelper
 {
-    public partial class CxSignClient
+    public class CxSignClient
     {
-        private CookieContainer _Cookie = new CookieContainer();
+        private readonly CookieContainer _cookie;
 
-        public string Fid { get; set; } = null;
+        private string Fid { get; set; }
 
-        public string PUid { get; set; } = null;
+        private string PUid { get; set; }
 
         private CxSignClient(CookieContainer cookieContainer)
         {
-            _Cookie = cookieContainer;
+            _cookie = cookieContainer;
             ParseCookies();
         }
 
-        public static async Task<CxSignClient> LoginAsync(string username, string password)
+        public static async Task<CxSignClient> LoginAsync(string username, string password, string fid = null)
         {
-            RestClient LoginClient = new RestClient("https://passport2-api.chaoxing.com")
+            RestClient client;
+            IRestResponse response;
+            if (string.IsNullOrEmpty(fid))
             {
-                CookieContainer = new CookieContainer()
-            };
-            var request = new RestRequest("v11/loginregister");
-            request.AddParameter("uname", username);
-            request.AddParameter("code", password);
-            var response = await LoginClient.ExecuteGetAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+                client = new RestClient("https://passport2-api.chaoxing.com")
+                {
+                    CookieContainer = new CookieContainer()
+                };
+                var request = new RestRequest("v11/loginregister");
+                request.AddParameter("uname", username);
+                request.AddParameter("code", password);
+                response = await client.ExecuteGetAsync(request);
+            }
+            else
+            {
+                client = new RestClient($"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}")
+                {
+                    CookieContainer = new CookieContainer()
+                };
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+                request.AddParameter("pwd", password);
+                request.AddParameter("t", "0");
+                response = await client.ExecutePostAsync(request);
+            }
+            TestResponseCode(response);
             var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
             if (loginObject.Status != true)
-                throw new Exception(loginObject.Message);
-
-            CxSignClient result = new CxSignClient(LoginClient.CookieContainer);
-            return result;
-        }
-
-        public static async Task<CxSignClient> LoginAsync(string username, string password, string fid)
-        {
-            string url = $"https://passport2-api.chaoxing.com/v6/idNumberLogin?fid={fid}&idNumber={username}";
-            RestClient LoginClient = new RestClient(url)
             {
-                CookieContainer = new CookieContainer()
-            };
-            var request = new RestRequest(Method.POST);
-            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-            request.AddParameter("pwd", password);
-            request.AddParameter("t", "0");
-            var response = await LoginClient.ExecutePostAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
-            var loginObject = JsonConvert.DeserializeObject<LoginObject>(response.Content);
-            if (loginObject.Status != true)
                 throw new Exception(loginObject.Message);
-
-            CxSignClient result = new CxSignClient(LoginClient.CookieContainer);
-            return result;
+            }
+            return new CxSignClient(client.CookieContainer);
         }
 
-
-        public async Task<string> GetTokenAsync()
+        private async Task<string> GetTokenAsync()
         {
-            RestClient TokenClient = new RestClient("https://pan-yz.chaoxing.com");
+            var client = new RestClient("https://pan-yz.chaoxing.com")
+            {
+                CookieContainer = _cookie
+            };
             var request = new RestRequest("api/token/uservalid");
-            TokenClient.CookieContainer = _Cookie;
-            var response = await TokenClient.ExecuteGetAsync(request);
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+            var response = await client.ExecuteGetAsync(request);
+            TestResponseCode(response);
             var tokenObject = JsonConvert.DeserializeObject<TokenObject>(response.Content);
             if (tokenObject.Result != true)
-                throw new Exception("获取token失败");
+            {
+                throw new Exception("获取 token 失败");
+            }
             return tokenObject.Token;
         }
 
-        public async Task<List<SignTask>> GetSignTasksAsync(string courseId, string classId)
+        public async Task<JArray> GetSignTasksAsync(string courseId, string classId)
         {
-            RestClient client = new RestClient("https://mobilelearn.chaoxing.com")
+            var client = new RestClient("https://mobilelearn.chaoxing.com")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
             };
             var request = new RestRequest("v2/apis/active/student/activelist");
             request.AddParameter("fid", "0");
             request.AddParameter("courseId", courseId);
             request.AddParameter("classId", classId);
             var response = await client.ExecuteGetAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+            TestResponseCode(response);
             var json = JObject.Parse(response.Content);
-            if (json["result"].Value<int>() != 1)
-                new Exception(json["msg"].Value<string>());
-            var taskJArray = JArray.FromObject(json["data"]["activeList"]);
-            return taskJArray.ToObject<List<SignTask>>().Where(x => x.Type == 2).OrderByDescending(x => x.StartTime).ToList();
+            if (json["result"]!.Value<int>() != 1)
+            {
+                throw new Exception(json["msg"]?.Value<string>());
+            }
+            return (JArray)json["data"]!["activeList"];
         }
 
-        public async Task SignAsync(SignTask task, SignOptions signOptions)
+        public async Task<JToken> GetActiveDetailAsync(string activeId)
         {
-            var SignClien = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+            var client = new RestClient("https://mobilelearn.chaoxing.com")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
+            };
+            var request = new RestRequest("v2/apis/active/getPPTActiveInfo");
+            request.AddParameter("activeId", activeId);
+            var response = await client.ExecuteGetAsync(request);
+            TestResponseCode(response);
+            var json = JObject.Parse(response.Content);
+            if (json["result"]?.Value<int>() != 1)
+            {
+                throw new Exception("Message: " + json["msg"]?.Value<string>() +
+                                    "\nError Message: " + json["errorMsg"]?.Value<string>());
+            }
+            return json["data"];
+        }
+
+        public async Task<string> SignAsync(string activeId, SignOptions signOptions)
+        {
+            var client = new RestClient("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+            {
+                CookieContainer = _cookie
             };
             var request = new RestRequest(Method.GET);
             // ?activeId=292002019&appType=15&ifTiJiao=1&latitude=-1&longitude=-1&clientip=1.1.1.1&address=中国&objectId=3194679e88dbc9c60a4c6e31da7fa905
-            request.AddParameter("activeId", task.Id);
+            request.AddParameter("activeId", activeId);
             request.AddParameter("appType", "15");
             request.AddParameter("ifTiJiao", "1");
             request.AddParameter("latitude", signOptions.Latitude);
@@ -119,85 +131,90 @@ namespace CxSignHelper
             request.AddParameter("clientip", signOptions.ClientIp);
             request.AddParameter("address", signOptions.Address);
             request.AddParameter("objectId", signOptions.ImageId);
-            var response = await SignClien.ExecuteGetAsync(request);
-            if (response.Content == "success" || response.Content == "您已签到过了") return;
-            throw new Exception($"签到出错: {response.Content}");
+            var response = await client.ExecuteGetAsync(request);
+            return response.Content;
         }
 
         public async Task<(string ImToken, string TUid)> GetImTokenAsync()
         {
-            RestClient client = new RestClient("https://im.chaoxing.com/webim/me")
+            var client = new RestClient("https://im.chaoxing.com/webim/me")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
             };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+            TestResponseCode(response);
             var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
             var match = regex.Match(response.Content);
-            if (match.Success)
+            if (!match.Success)
             {
-                return (match.Groups[2].Value, match.Groups[1].Value);
+                throw new Exception("获取 ImToken 失败");
             }
-            else throw new Exception("获取ImToken失败");
+            return (match.Groups[2].Value, match.Groups[1].Value);
         }
 
-        public async Task<List<CourseModel>> GetCoursesAsync()
+        public async Task GetCoursesAsync(JToken course)
         {
-            RestClient client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=")
+            var client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
             };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+            TestResponseCode(response);
             var regex = new Regex(@"\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+""");
             var matches = regex.Matches(response.Content);
-            List<CourseModel> result = new List<CourseModel>();
             foreach (Match match in matches)
             {
-                if (match.Groups.Count <= 2) continue;
-                string courseId = match.Groups[1].Value;
-                string classId = match.Groups[2].Value;
-                var (ChatId, CourseName, ClassName) = await GetClassDetailAsync(courseId, classId);
-                result.Add(new CourseModel()
+                if (match.Groups.Count <= 2)
                 {
-                    CourseId = courseId,
-                    ClassId = classId,
-                    ChatId = ChatId,
-                    ClassName = ClassName,
-                    CourseName = CourseName
-                });
+                    continue;
+                }
+                var courseId = match.Groups[1].Value;
+                var classId = match.Groups[2].Value;
+                var (chatId, courseName, className) = await GetClassDetailAsync(courseId, classId);
+                var obj = new JObject
+                {
+                    ["CourseId"] = courseId,
+                    ["ClassId"] = classId,
+                    ["ChatId"] = chatId,
+                    ["CourseName"] = courseName,
+                    ["ClassName"] = className
+                };
+                course[chatId] = obj;
             }
-            return result;
         }
 
-        private async Task<(string ChatId, string CourseName, string ClassName)> GetClassDetailAsync(string CourseId, string ClassId)
+        private async Task<(string ChatId, string CourseName, string ClassName)> GetClassDetailAsync(string courseId, string classId)
         {
-            RestClient client = new RestClient($"https://mobilelearn.chaoxing.com/v2/apis/class/getClassDetail?fid={Fid}&courseId={CourseId}&classId={ClassId}")
+            var client = new RestClient($"https://mobilelearn.chaoxing.com/v2/apis/class/getClassDetail?fid={Fid}&courseId={courseId}&classId={classId}")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
             };
             var request = new RestRequest(Method.GET);
             var response = await client.ExecuteGetAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("非200状态响应");
+            TestResponseCode(response);
             var json = JObject.Parse(response.Content);
-            if (json["result"].Value<int>() != 1) 
-                throw new Exception(json["msg"].Value<string>());
-            var chatId = json["data"]["chatid"].Value<string>();
-            var courseName = json["data"]["course"]["data"][0]["name"].Value<string>();
-            var className = json["data"]["name"].Value<string>();
+            if (json["result"]!.Value<int>() != 1)
+            {
+                throw new Exception(json["msg"]?.Value<string>());
+            }
+            var data = json["data"];
+            var chatId = data!["chatid"]!.Value<string>();
+            var courseName = data["course"]!["data"]![0]!["name"]!.Value<string>();
+            var className = data["name"]!.Value<string>();
             return (chatId, courseName, className);
         }
 
         public async Task<string> UploadImageAsync(string path)
         {
+            // 预览：
+            // https://p.ananas.chaoxing.com/star3/170_220c/f5b88e10d3dfedf9829ca8c009029e7b.png
+            // https://p.ananas.chaoxing.com/star3/origin/f5b88e10d3dfedf9829ca8c009029e7b.png
+            // https://pan-yz.chaoxing.com/thumbnail/origin/f5b88e10d3dfedf9829ca8c009029e7b?type=img
             var client = new RestClient("https://pan-yz.chaoxing.com/upload")
             {
-                CookieContainer = _Cookie
+                CookieContainer = _cookie
             };
             var request = new RestRequest(Method.POST);
             request.AddParameter("puid", PUid);
@@ -205,18 +222,27 @@ namespace CxSignHelper
             request.AddFile("file", path);
             var response = await client.ExecutePostAsync(request);
             var json = JObject.Parse(response.Content);
-            if (json["result"].Value<bool>() != true) 
-                throw new Exception(json["msg"].Value<string>());
-            return json["objectId"].Value<string>();
+            if (json["result"]!.Value<bool>() != true)
+            {
+                throw new Exception(json["msg"]?.Value<string>());
+            }
+            return json["objectId"]!.Value<string>();
         }
 
         private void ParseCookies()
         {
-            var cookies = _Cookie.GetCookies(new Uri("http://chaoxing.com"));
-            Fid = cookies["fid"].Value;
-            PUid = cookies["_uid"].Value;
+            var cookies = _cookie.GetCookies(new Uri("http://chaoxing.com"));
+            Fid = cookies["fid"]?.Value;
+            PUid = cookies["_uid"]!.Value;
         }
 
-
+        public static void TestResponseCode(IRestResponse response)
+        {
+            var code = response.StatusCode;
+            if (code != HttpStatusCode.OK)
+            {
+                throw new Exception($"非 200 状态响应：{code:D} {code:G}\n{response.Content}");
+            }
+        }
     }
 }

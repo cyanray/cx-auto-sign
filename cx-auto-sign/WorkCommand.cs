@@ -4,220 +4,335 @@ using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog.Core;
 using Websocket.Client;
 
 namespace cx_auto_sign
 {
     [Command(Description = "工作模式, 监听签到任务并自动签到")]
-    class WorkCommand : CommandBase
+    public class WorkCommand : CommandBase
     {
-        /// <summary>
-        /// 班级的群聊ID - 上一次查询的签到任务数量
-        /// </summary>
-        private Dictionary<string, int> CidCountPair = new Dictionary<string, int>();
-        public List<string> ImageIds { get; set; } = new List<string>();
+        private static readonly DateTime DateTime1970 = new(1970, 1, 1, 8, 0, 0);
+
+        // ReSharper disable UnassignedGetOnlyAutoProperty
+        [Option("-u", Description = "指定用户名（学号）")]
+        private string Username { get; }
+        // ReSharper restore UnassignedGetOnlyAutoProperty
+
+        private WebsocketClient _ws;
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            try
+            var appConfig = new AppDataConfig();
+            var user = Username ?? appConfig.DefaultUsername;
+            if (user == null)
             {
-                Log.Information("登录账号 {Username} 中...", AppConfig.Username);
-                CxSignClient client = null;
-                if (string.IsNullOrEmpty(AppConfig.Fid))
-                    client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password);
-                else
-                    client = await CxSignClient.LoginAsync(AppConfig.Username, AppConfig.Password, AppConfig.Fid);
-                Log.Information("登录账号 {Username} 成功", AppConfig.Username);
-                var imParams = await client.GetImTokenAsync();
+                Log.Error("没有设置用户，可以使用 -u 指定用户");
+                return 1;
+            }
 
-                // 上传文件夹下所有图片
-                if (!Directory.Exists("Images"))
+            var userConfig = new UserDataConfig(user);
+            var auConfig = new UserConfig(appConfig, userConfig);
+            var username = userConfig.Username;
+            var password = userConfig.Password;
+            var fid = userConfig.Fid;
+
+            Log.Information("正在登录账号：{Username}", username);
+            var client = await CxSignClient.LoginAsync(username, password, fid);
+            Log.Information("成功登录账号");
+            var (imToken, uid) = await client.GetImTokenAsync();
+
+            var enableWeiApi = false;
+            var webApi = userConfig.WebApi;
+            if (webApi != null)
+            {
+                string rule = null;
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
+                if (webApi.Type == JTokenType.Boolean)
                 {
-                    Directory.CreateDirectory("Images");
-                }
-                DirectoryInfo di = new DirectoryInfo("Images");
-                FileSystemInfo[] fis = di.GetFileSystemInfos();
-                foreach (FileSystemInfo fi in fis)
-                {
-                    if ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
+                    if (webApi.Value<bool>())
                     {
-                        Log.Information("正在上传: {FileName} ...", fi.Name);
-                        ImageIds.Add(await client.UploadImageAsync("Images/" + fi.Name));
-                        Log.Information("上传成功, Objectid = {Objectid}", ImageIds[^1]);
+                        rule = "http://localhost:5743";
                     }
                 }
-
-                if (AppConfig.EnableWebApi)
+                else if (webApi.Type == JTokenType.String)
                 {
-                    // 启动 WebApi 服务
-                    Log.Information("启动 WebApi 服务");
-                    cx_auto_sign.WebApi.IntervalData.Status = new WebApi.Status()
-                    {
-                        Username = AppConfig.Username,
-                        CxAutoSignEnabled = true
-                    };
-                    _ = Task.Run(() => { cx_auto_sign.WebApi.Program.Main(null); });
+                    rule = webApi.Value<string>();
                 }
 
-                // 创建 Websocket 对象，监听消息
-                var exitEvent = new ManualResetEvent(false);
-                var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");
-                #region 消息处理
-                using (var wsClient = new WebsocketClient(url))
+                if (rule != null)
                 {
-                    wsClient.ReconnectionHappened.Subscribe(info =>
-                       Log.Warning("CXIM: Reconnection happened, type: {Type}", info.Type));
-
-                    wsClient.MessageReceived.Subscribe(async msg =>
+                    // 启动 WebApi 服务
+                    enableWeiApi = true;
+                    Log.Information("启动 WebApi 服务");
+                    WebApi.Startup.Rule = rule;
+                    WebApi.IntervalData.Status = new WebApi.Status
                     {
-                        Log.Information($"CXIM: Message received: {msg}");
+                        Username = username,
+                        CxAutoSignEnabled = true
+                    };
+                    _ = Task.Run(() => { WebApi.Program.Main(null); });
+                }
+            }
+
+            // 创建 Websocket 对象，监听消息
+            var exitEvent = new ManualResetEvent(false);
+            var url = new Uri("wss://im-api-vip6-v2.easemob.com/ws/032/xvrhfd2j/websocket");
+            using (_ws = new WebsocketClient(url, () => new ClientWebSocket
+            {
+                Options =
+                {
+                    KeepAliveInterval = TimeSpan.FromMilliseconds(-1)
+                }
+            }))
+            {
+                _ws.ReconnectionHappened.Subscribe(info =>
+                    Log.Warning("CXIM: Reconnection happened, type: {Type}", info.Type));
+
+                async void OnMessageReceived(ResponseMessage msg)
+                {
+                    var startTime = GetTimestamp();
+                    try
+                    {
+                        Log.Information("CXIM: Message received: {Message}", msg);
                         if (msg.Text.StartsWith("o"))
                         {
-                            var loginPackage = cxim.BuildLoginPackage(imParams.TUid, imParams.ImToken);
-                            Log.Information($"CXIM: Message send: {loginPackage}");
-                            wsClient.Send(loginPackage);
+                            Log.Information("CXIM 登录");
+                            var loginPackage = Cxim.BuildLoginPackage(uid, imToken);
+                            Log.Information("CXIM: Message send: {Message}", loginPackage);
+                            _ws.Send(loginPackage);
                             return;
                         }
 
-                        if (msg.Text.StartsWith("a"))
+                        if (!msg.Text.StartsWith("a"))
                         {
-                            var json = JArray.Parse(msg.Text.Substring(1));
-                            var pkgBytes = Convert.FromBase64String(json[0].Value<string>());
-                            if (pkgBytes.Length <= 5) return;
-                            var t = new byte[5];
-                            Array.Copy(pkgBytes, t, 5);
-                            if (!t.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a })) return;
-                            uint len;
-                            string cidStr;
+                            return;
+                        }
+                        var arrMsg = JArray.Parse(msg.Text[1..]);
+                        foreach (var message in arrMsg)
+                        {
+                            Logger log = null;
                             try
                             {
-                                // 解析课程消息数据包
-                                var lenByte = new byte[1];
-                                Array.Copy(pkgBytes, 9, lenByte, 0, 1);
-                                len = Convert.ToUInt32(lenByte[0]);
-                                var cid = new byte[len];
-                                Array.Copy(pkgBytes, 10, cid, 0, len);
-                                cidStr = Encoding.ASCII.GetString(cid);
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error("解析课程消息数据出错!");
-                                Log.Error(ex.Message);
-                                Log.Error(ex.StackTrace);
-                                return;
-                            }
-                            Log.Information("收到来自 {cidStr} 的消息", cidStr);
+                                var pkgBytes = Convert.FromBase64String(message.Value<string>());
+                                if (pkgBytes.Length <= 5)
+                                {
+                                    continue;
+                                }
 
-                            // WebApi 设置
-                            if (AppConfig.EnableWebApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
-                            {
-                                Log.Warning("因 WebApi 设置，跳过签到");
-                                return;
-                            }
+                                var header = new byte[5];
+                                Array.Copy(pkgBytes, header, 5);
+                                if (!header.SequenceEqual(new byte[] { 0x08, 0x00, 0x40, 0x02, 0x4a }))
+                                {
+                                    continue;
+                                }
 
-                            // 签到流程
-                            var course = Courses.Where(x => x.ChatId == cidStr).FirstOrDefault();
-                            if (course is null) return;
-                            Log.Information("获取课程 {courseName} 的签到任务...", course.CourseName);
-                            var signTasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
-                            if (!CidCountPair.ContainsKey(cidStr)) CidCountPair.Add(cidStr, -1);
-                            if (CidCountPair[cidStr] == signTasks.Count)
-                            {
-                                Log.Information("课程 {courseName} 没有新的签到任务", course.CourseName);
-                                return;
-                            }
+                                if (pkgBytes[5] != 0x2b)
+                                {
+                                    Log.Warning("可能不是课程消息");
+                                    continue;
+                                }
 
-                            Log.Information("正在签到课程 {courseName} 的所有签到任务...", course.CourseName);
-                            // 随机选取一张图片作为签到图片
-                            string imageId = "041ed4756ca9fdf1f9b6dde7a83f8794";
-                            if (ImageIds.Count != 0)
-                            {
-                                Random rd = new Random();
-                                imageId = ImageIds[rd.Next(0, ImageIds.Count)];
-                            }
-                            // 创建 SignOptions
-                            var signOptions = new SignOptions()
-                            {
-                                Address = AppConfig.Address,
-                                ClientIp = AppConfig.ClientIp,
-                                Latitude = AppConfig.Latitude,
-                                Longitude = AppConfig.Longitude,
-                                ImageId = imageId
-                            };
-                            await Task.Delay(AppConfig.DelaySeconds * 1000);
-                            int L = signTasks.Count - CidCountPair[cidStr];
-                            foreach (var task in signTasks)
-                            {
-                                // TODO: 对签到失败的情况做处理
+                                Log.Information("接收到课程消息");
+
+                                string chatId;
                                 try
                                 {
-                                    await client.SignAsync(task, signOptions);
+                                    chatId = Cxim.GetChatId(pkgBytes);
                                 }
-                                catch (Exception ex)
+                                catch (Exception e)
                                 {
-                                    Log.Error("签到失败!");
-                                    Log.Error(ex.Message);
-                                    Log.Error(ex.StackTrace);
+                                    throw new Exception("解析失败，无法获取 ChatId", e);
                                 }
-                                L--;
-                                if (L == 0) break;
-                            }
-                            CidCountPair[cidStr] = signTasks.Count;
-                            // 发送邮件
-                            Log.Information("已完成该课程所有签到");
-                            try
-                            {
-                                Email.SendPlainText($"cx-auto-sign 自动签到通知",
-                                    $"发现课程 {course.CourseName}-{course.ClassName} 有新的签到任务，已签到({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
-                                Log.Information("已发送通知邮件!");
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error("发送通知邮件失败!");
-                                Log.Error(ex.Message);
-                                Log.Error(ex.StackTrace);
-                            }
-                            // ServerChan 通知
-                            try
-                            {
-                                if(!string.IsNullOrEmpty(AppConfig.ServerChanKey))
+
+                                log = Notification.CreateLogger(auConfig, GetTimestamp());
+                                log.Information("消息时间：{Time}", startTime);
+                                log.Information("ChatId: {ChatId}", chatId);
+
+                                var course = userConfig.GetCourse(chatId);
+                                log.Information("获取 {CourseName} 签到任务中", course.CourseName);
+                                var courseConfig = new CourseConfig(appConfig, userConfig, course);
+                                var tasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
+                                if (tasks.Count == 0)
                                 {
-                                    await ServerChan.SendAsync(AppConfig.ServerChanKey, "cx-auto-sign 自动签到通知",
-                                        $"发现课程 {course.CourseName}-{course.ClassName} 有新的签到任务，已签到({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
-                                    Log.Information("已发送ServerChan通知!");
+                                    Log.Error("没有活动任务");
+                                    log = null;
+                                    continue;
                                 }
+
+                                var task = tasks[0];
+                                var taskTime = task["startTime"]!.Value<long>();
+                                log.Information("任务时间: {Time}", taskTime);
+                                var takenTime = startTime - taskTime;
+                                log.Information("消息与任务相差: {Time}ms", takenTime);
+                                if (takenTime > 5000)
+                                {
+                                    // 当教师发布作业的等操作也触发「接收到课程消息」
+                                    // 但这些操作不会体现在「活动列表」中
+                                    // 因此，这里通过活动开始的时间来判断接收到的是否是活动消息
+                                    Log.Warning("不是活动消息");
+                                    log = null;
+                                    continue;
+                                }
+                                var type = task["type"];
+                                if (type?.Type != JTokenType.Integer || type.Value<int>() != 2)
+                                {
+                                    Log.Warning("不是签到任务");
+                                    log = null;
+                                    continue;
+                                }
+
+                                var activeId = task["id"]?.ToString();
+                                if (string.IsNullOrEmpty(activeId))
+                                {
+                                    Log.Error("解析失败，ActiveId 为空");
+                                    log = null;
+                                    continue;
+                                }
+                                log.Information("准备签到 ActiveId: {ActiveId}", activeId);
+
+                                var data = await client.GetActiveDetailAsync(activeId);
+                                var signType = GetSignType(data);
+                                log.Information("签到类型：{Type}", GetSignTypeName(signType));
+                                // ReSharper disable once ConvertIfStatementToSwitchStatement
+                                if (signType == SignType.Gesture)
+                                {
+                                    log.Information("手势：{Code}", data["signCode"]?.Value<string>());
+                                }
+                                else if (signType == SignType.Qr)
+                                {
+                                    log.Warning("暂时无法二维码签到");
+                                    continue;
+                                }
+
+                                if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
+                                {
+                                    log.Information("因 WebApi 设置，跳过签到");
+                                    continue;
+                                }
+
+                                if (!courseConfig.SignEnable)
+                                {
+                                    log.Information("因用户配置，跳过签到");
+                                    continue;
+                                }
+
+                                var signOptions = courseConfig.GetSignOptions(signType);
+                                if (signOptions == null)
+                                {
+                                    log.Warning("因用户课程配置，跳过签到");
+                                    continue;
+                                }
+
+                                if (signType == SignType.Photo)
+                                {
+                                    signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
+                                    log.Information("预览：{Url}",
+                                        $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
+                                }
+                                log.Information("签到准备完毕，耗时：{Time}ms",
+                                    GetTimestamp() - startTime);
+                                takenTime = GetTimestamp() - taskTime;
+                                log.Information("签到已发布：{Time}ms", takenTime);
+                                var delay = courseConfig.SignDelay;
+                                log.Information("用户配置延迟签到：{Time}s", delay);
+                                if (delay > 0)
+                                {
+                                    delay = (int) (delay * 1000 - takenTime);
+                                    if (delay > 0)
+                                    {
+                                        log.Information("将等待：{Delay}ms", delay);
+                                        await Task.Delay(delay);
+                                    }
+                                }
+
+                                log.Information("开始签到");
+                                var ok = false;
+                                var content = await client.SignAsync(activeId, signOptions);
+                                switch (content)
+                                {
+                                    case  "success":
+                                        content = "签到完成";
+                                        ok = true;
+                                        break;
+                                    case "您已签到过了":
+                                        ok = true;
+                                        break;
+                                    default:
+                                        log.Error("签到失败");
+                                        break;
+                                }
+                                log.Information(content);
+                                Notification.Status(log, ok);
                             }
-                            catch (Exception ex)
+                            catch (Exception e)
                             {
-                                Log.Error("发送ServerChan通知失败!");
-                                Log.Error(ex.Message);
-                                Log.Error(ex.StackTrace);
+                                (log ?? Log.Logger).Error(e, "CXIM 接收到课程消息时出错");
+                            }
+                            finally
+                            {
+                                if (log != null)
+                                {
+                                    Notification.Send(log);
+                                }
                             }
                         }
-
-
-                    });
-
-                    await wsClient.Start();
-
-                    exitEvent.WaitOne();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, "CXIM 接收到消息处理时出错");
+                    }
                 }
-                #endregion
-                Console.ReadKey();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message);
-                Log.Error(ex.StackTrace);
+
+                _ws.MessageReceived.Subscribe(OnMessageReceived);
+                await _ws.Start();
+                exitEvent.WaitOne();
             }
 
-            return await base.OnExecuteAsync(app);
+            Console.ReadKey();
+
+            return 0;
+        }
+
+        private static SignType GetSignType(JToken data)
+        {
+            var otherId = data["otherId"].Value<int>();
+            switch (otherId)
+            {
+                case 2:
+                    return SignType.Qr;
+                case 3:
+                    return SignType.Gesture;
+                case 4:
+                    return SignType.Location;
+                default:
+                    var token = data["ifphoto"];
+                    return token?.Type == JTokenType.Integer && token.Value<int>() != 0
+                        ? SignType.Photo
+                        : SignType.Normal;
+            }
+        }
+
+        private static string GetSignTypeName(SignType type)
+        {
+            return type switch
+            {
+                SignType.Normal => "普通签到",
+                SignType.Photo => "图片签到",
+                SignType.Qr => "二维码签到",
+                SignType.Gesture => "手势签到",
+                SignType.Location => "位置签到",
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            };
+        }
+
+        private static double GetTimestamp()
+        {
+            return (DateTime.Now - DateTime1970).TotalMilliseconds;
         }
     }
 }

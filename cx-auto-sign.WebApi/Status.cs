@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace cx_auto_sign.WebApi
+﻿namespace cx_auto_sign.WebApi
 {
     public class Status
     {
-        public string Username { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public string Username { get; init; }
         public bool CxAutoSignEnabled { get; set; }
     }
 }
