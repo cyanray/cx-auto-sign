@@ -117,10 +117,12 @@ cx-auto-sign
   "SignPhoto": true,    // 允许图片签到，默认一张黑图，可在这里设置值，详见「拍照签到参数说明」
   "SignLocation": true, // 允许位置签到
   "SignDelay": 0,       // 检测到新签到活动后延迟签到的秒数（过小容易出现秒签到现象）
-  "SignAddress": "中国", // 位置签到的中文名地址
-  "SignLatitude": "-1", // 位置签到的纬度
-  "SignLongitude": "-1",// 位置签到的经度
   "SignClientIp": "1.1.1.1", // 签到时提交的客户端 ip 地址
+  "SignAddress": "中国", // 位置签到的中文名地址
+  // 经纬度坐标使用的是百度坐标系，可通过此工具来确定 https://tool.lu/coordinate/
+  // 注意不要弄反了，不然你就在地球的另一头上课了
+  "SignLongitude": "-1",// 位置签到的经度
+  "SignLatitude": "-1", // 位置签到的纬度
 
   // 以下为特有属性，不会被优先级覆盖
   "DefaultUsername": "", // 默认用户
