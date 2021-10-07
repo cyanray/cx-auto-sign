@@ -4,6 +4,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -24,6 +25,8 @@ namespace cx_auto_sign
         // ReSharper restore UnassignedGetOnlyAutoProperty
 
         private WebsocketClient _ws;
+
+        private readonly Dictionary<string, CountCache> _taskCache = new();
 
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
@@ -46,6 +49,11 @@ namespace cx_auto_sign
             Log.Information("成功登录账号");
             var (imToken, uid) = await client.GetImTokenAsync();
 
+            Log.Information("正在缓存已有任务");
+            await InitTaskCache(client);
+            Log.Information("已缓存已有任务");
+
+            // if (true) return 0;
             var enableWeiApi = false;
             var webApi = userConfig.WebApi;
             if (webApi != null)
@@ -154,120 +162,141 @@ namespace cx_auto_sign
                                 log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
-                                log.Information("获取 {CourseName} 签到任务中", course.CourseName);
+                                log.Information("获取 {CourseName} 活动任务中",
+                                    course.CourseName);
                                 var courseConfig = new CourseConfig(appConfig, userConfig, course);
                                 var tasks = await client.GetSignTasksAsync(course.CourseId, course.ClassId);
-                                if (tasks.Count == 0)
+                                var count = tasks.Count;
+                                if (count == 0)
                                 {
                                     Log.Error("没有活动任务");
                                     log = null;
                                     continue;
                                 }
-
-                                var task = tasks[0];
-                                var taskTime = task["startTime"]!.Value<long>();
-                                log.Information("任务时间: {Time}", taskTime);
-                                var takenTime = startTime - taskTime;
-                                log.Information("消息与任务相差: {Time}ms", takenTime);
-                                if (takenTime > 5000)
+                               
+                                CountCache countCache;
+                                lock (_taskCache)
                                 {
-                                    // 当教师发布作业的等操作也触发「接收到课程消息」
-                                    // 但这些操作不会体现在「活动列表」中
-                                    // 因此，这里通过活动开始的时间来判断接收到的是否是活动消息
-                                    Log.Warning("不是活动消息");
-                                    log = null;
-                                    continue;
-                                }
-                                var type = task["type"];
-                                if (type?.Type != JTokenType.Integer || type.Value<int>() != 2)
-                                {
-                                    Log.Warning("不是签到任务");
-                                    log = null;
-                                    continue;
-                                }
-
-                                var activeId = task["id"]?.ToString();
-                                if (string.IsNullOrEmpty(activeId))
-                                {
-                                    Log.Error("解析失败，ActiveId 为空");
-                                    log = null;
-                                    continue;
-                                }
-                                log.Information("准备签到 ActiveId: {ActiveId}", activeId);
-
-                                var data = await client.GetActiveDetailAsync(activeId);
-                                var signType = GetSignType(data);
-                                log.Information("签到类型：{Type}", GetSignTypeName(signType));
-                                // ReSharper disable once ConvertIfStatementToSwitchStatement
-                                if (signType == SignType.Gesture)
-                                {
-                                    log.Information("手势：{Code}", data["signCode"]?.Value<string>());
-                                }
-                                else if (signType == SignType.Qr)
-                                {
-                                    log.Warning("暂时无法二维码签到");
-                                    continue;
-                                }
-
-                                if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
-                                {
-                                    log.Information("因 WebApi 设置，跳过签到");
-                                    continue;
-                                }
-
-                                if (!courseConfig.SignEnable)
-                                {
-                                    log.Information("因用户配置，跳过签到");
-                                    continue;
-                                }
-
-                                var signOptions = courseConfig.GetSignOptions(signType);
-                                if (signOptions == null)
-                                {
-                                    log.Warning("因用户课程配置，跳过签到");
-                                    continue;
-                                }
-
-                                if (signType == SignType.Photo)
-                                {
-                                    signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
-                                    log.Information("预览：{Url}",
-                                        $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
-                                }
-                                log.Information("签到准备完毕，耗时：{Time}ms",
-                                    GetTimestamp() - startTime);
-                                takenTime = GetTimestamp() - taskTime;
-                                log.Information("签到已发布：{Time}ms", takenTime);
-                                var delay = courseConfig.SignDelay;
-                                log.Information("用户配置延迟签到：{Time}s", delay);
-                                if (delay > 0)
-                                {
-                                    delay = (int) (delay * 1000 - takenTime);
-                                    if (delay > 0)
+                                    if (!_taskCache.TryGetValue(chatId, out countCache))
                                     {
-                                        log.Information("将等待：{Delay}ms", delay);
-                                        await Task.Delay(delay);
+                                        countCache = new CountCache();
+                                        _taskCache[chatId] = countCache;
                                     }
                                 }
-
-                                log.Information("开始签到");
-                                var ok = false;
-                                var content = await client.SignAsync(activeId, signOptions);
-                                switch (content)
+                                try
                                 {
-                                    case  "success":
-                                        content = "签到完成";
-                                        ok = true;
-                                        break;
-                                    case "您已签到过了":
-                                        ok = true;
-                                        break;
-                                    default:
-                                        log.Error("签到失败");
-                                        break;
+                                    await countCache.Lock.WaitAsync();
+                                    count -= countCache.Count;
+                                    if (count <= 0)
+                                    {
+                                        // 当教师发布作业的等操作也触发「接收到课程消息」
+                                        // 但这些操作不会体现在「活动列表」中
+                                        Log.Warning("可能不是活动消息");
+                                        log = null;
+                                        continue;
+                                    }
+                                    countCache.Count++;
+                                    count = countCache.Count;
+                                    var task = tasks[count - 1];
+                                    var taskTime = task["startTime"]!.Value<long>();
+                                    log.Information("任务时间: {Time}", taskTime);
+                                    var type = task["type"];
+                                    if (type?.Type != JTokenType.Integer || type.Value<int>() != 2)
+                                    {
+                                        Log.Warning("不是签到任务");
+                                        log = null;
+                                        continue;
+                                    }
+
+                                    var activeId = task["id"]?.ToString();
+                                    if (string.IsNullOrEmpty(activeId))
+                                    {
+                                        Log.Error("解析失败，ActiveId 为空");
+                                        log = null;
+                                        continue;
+                                    }
+                                    log.Information("准备签到 ActiveId: {ActiveId}", activeId);
+
+                                    var data = await client.GetActiveDetailAsync(activeId);
+                                    var signType = GetSignType(data);
+                                    log.Information("签到类型：{Type}",
+                                        GetSignTypeName(signType));
+                                    // ReSharper disable once ConvertIfStatementToSwitchStatement
+                                    if (signType == SignType.Gesture)
+                                    {
+                                        log.Information("手势：{Code}",
+                                            data["signCode"]?.Value<string>());
+                                    }
+                                    else if (signType == SignType.Qr)
+                                    {
+                                        log.Warning("暂时无法二维码签到");
+                                        continue;
+                                    }
+
+                                    if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
+                                    {
+                                        log.Information("因 WebApi 设置，跳过签到");
+                                        continue;
+                                    }
+
+                                    if (!courseConfig.SignEnable)
+                                    {
+                                        log.Information("因用户配置，跳过签到");
+                                        continue;
+                                    }
+
+                                    var signOptions = courseConfig.GetSignOptions(signType);
+                                    if (signOptions == null)
+                                    {
+                                        log.Warning("因用户课程配置，跳过签到");
+                                        continue;
+                                    }
+
+                                    if (signType == SignType.Photo)
+                                    {
+                                        signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
+                                        log.Information("预览：{Url}",
+                                            $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
+                                    }
+                                    log.Information("签到准备完毕，耗时：{Time}ms",
+                                        GetTimestamp() - startTime);
+                                    var takenTime = GetTimestamp() - taskTime;
+                                    log.Information("签到已发布：{Time}ms", takenTime);
+                                    var delay = courseConfig.SignDelay;
+                                    log.Information("用户配置延迟签到：{Time}s", delay);
+                                    if (delay > 0)
+                                    {
+                                        delay = (int) (delay * 1000 - takenTime);
+                                        if (delay > 0)
+                                        {
+                                            log.Information("将等待：{Delay}ms", delay);
+                                            await Task.Delay(delay);
+                                        }
+                                    }
+
+                                    log.Information("开始签到");
+                                    var ok = false;
+                                    var content = await client.SignAsync(activeId, signOptions);
+                                    switch (content)
+                                    {
+                                        case  "success":
+                                            content = "签到完成";
+                                            ok = true;
+                                            break;
+                                        case "您已签到过了":
+                                            ok = true;
+                                            break;
+                                        default:
+                                            log.Error("签到失败");
+                                            break;
+                                    }
+                                    log.Information(content);
+                                    Notification.Status(log, ok);
                                 }
-                                log.Information(content);
-                                Notification.Status(log, ok);
+                                finally
+                                {
+                                    countCache.Lock.Release();
+                                }
                             }
                             catch (Exception e)
                             {
@@ -333,6 +362,26 @@ namespace cx_auto_sign
         private static double GetTimestamp()
         {
             return (DateTime.Now - DateTime1970).TotalMilliseconds;
+        }
+
+        private async Task InitTaskCache(CxSignClient client)
+        {
+            var courses = new JObject();
+            await client.GetCoursesAsync(courses);
+            foreach (var (chatId, course) in courses)
+            {
+                var cache = new CountCache();
+                var tasks = await client.GetSignTasksAsync(chatId, course["ClassId"]!.ToString());
+                cache.Count = tasks.Count;
+                // Log.Information("{CourseName} - {ClassName}: {Count}", 
+                //     course["CourseName"]!.ToString(), 
+                //     course["ClassName"]!.ToString(),
+                //     cache.Count);
+                lock (_taskCache)
+                {
+                    _taskCache[chatId] = cache;
+                }
+            }
         }
     }
 }
