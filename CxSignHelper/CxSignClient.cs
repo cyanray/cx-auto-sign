@@ -141,8 +141,7 @@ namespace CxSignHelper
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
             var match = regex.Match(response.Content);
@@ -155,12 +154,11 @@ namespace CxSignHelper
 
         public async Task GetCoursesAsync(JToken course)
         {
-            var client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=")
+            var client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&catalogId=0&searchname=")
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var regex = new Regex(@"\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+""");
             var matches = regex.Matches(response.Content);
@@ -191,8 +189,7 @@ namespace CxSignHelper
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
             if (json["result"]!.Value<int>() != 1)

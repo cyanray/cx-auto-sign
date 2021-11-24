@@ -162,6 +162,18 @@ namespace cx_auto_sign
                                 log.Information("ChatId: {ChatId}", chatId);
 
                                 var course = userConfig.GetCourse(chatId);
+                                if (course == null)
+                                {
+                                    log.Information("没有会话对应的课程");
+                                    await userConfig.UpdateAsync(client);
+                                    course = userConfig.GetCourse(chatId);
+                                    if (course == null)
+                                    {
+                                        Log.Information("此用户可能为该课程的教师");
+                                        log = null;
+                                        continue;
+                                    }
+                                }
                                 log.Information("获取 {CourseName} 活动任务中",
                                     course.CourseName);
                                 var courseConfig = new CourseConfig(appConfig, userConfig, course);
