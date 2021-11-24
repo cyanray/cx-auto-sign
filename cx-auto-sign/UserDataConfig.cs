@@ -124,9 +124,12 @@ namespace cx_auto_sign
             await client.GetCoursesAsync(_courses);
             foreach (var (_, course) in _courses)
             {
-                Log.Information("发现课程：{CourseName}-{ClassName} ({CourseId}, {ClassId})",
-                    course["CourseName"], course["ClassName"],
-                    course["CourseId"], course["ClassId"]);
+                Log.Logger.Information("发现课程：{CourseName}-{ClassName} ({CourseId}, {ClassId})",
+                    (string) course["CourseName"],
+                    (string) course["ClassName"],
+                    (string) course["CourseId"],
+                    (string) course["ClassId"]
+                );
             }
             Save();
         }
