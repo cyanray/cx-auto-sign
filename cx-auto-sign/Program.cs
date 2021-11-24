@@ -46,14 +46,14 @@ namespace cx_auto_sign
                 {
                     Console.WriteLine($"发现新版本: {version}");
                     Console.WriteLine(info);
-                    Console.WriteLine("请前往 https://github.com/cyanray/cx-auto-sign/releases 下载更新，或者按任意键继续...");
+                    Console.WriteLine("请前往 https://github.com/moeshin/cx-auto-sign/releases 下载更新，或者按任意键继续...");
                     Console.ReadKey();
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine("获取版本信息失败，请访问 https://github.com/cyanray/cx-auto-sign/releases 检查是否有更新");
+                Console.WriteLine("获取版本信息失败，请访问 https://github.com/moeshin/cx-auto-sign/releases 检查是否有更新");
             }
         }
 
@@ -68,9 +68,8 @@ namespace cx_auto_sign
 
         private static async Task<(string Version, string Info)> GetLatestVersion()
         {
-            var client = new RestClient($"https://api.github.com/repos/cyanray/cx-auto-sign/releases/latest");
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var client = new RestClient("https://api.github.com/repos/moeshin/cx-auto-sign/releases/latest");
+            var response = await client.ExecuteGetAsync(new RestRequest());
             var json = JObject.Parse(response.Content);
             if (response.StatusCode != HttpStatusCode.OK)
             {

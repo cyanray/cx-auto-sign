@@ -6,7 +6,7 @@
 
 ## 项目简介
 
-![](https://github.com/cyanray/cx-auto-sign/workflows/.NET%20Core/badge.svg)
+![](https://github.com/moeshin/cx-auto-sign/actions/workflows/dotnet-core.yml/badge.svg)
 
 cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
@@ -31,9 +31,9 @@ cx-auto-sign 是基于 .NET5 的超星学习通自动签到工具。
 
 首先需要在 [.Net Runtime 下载页](https://dotnet.microsoft.com/download/dotnet/current/runtime) 下载并安装 **.NET5 Runtime**（提示：Run server apps下边的下载）。
 
-然后在 [Release页面](https://github.com/cyanray/cx-auto-sign/releases) 下载 cx-auto-sign.zip，并解压到某个目录。
+然后在 [Release页面](https://github.com/moeshin/cx-auto-sign/releases) 下载 cx-auto-sign.zip，并解压到某个目录。
 
-（你也可以在 [Actions](https://github.com/cyanray/cx-auto-sign/actions) 中找到自动编译的测试版）
+（你也可以在 [Actions](https://github.com/moeshin/cx-auto-sign/actions) 中找到自动编译的测试版）
 
 ### 0x01 登录并初始化配置文件
 
