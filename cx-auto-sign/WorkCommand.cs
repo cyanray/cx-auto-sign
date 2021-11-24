@@ -94,12 +94,18 @@ namespace cx_auto_sign
             {
                 Options =
                 {
-                    KeepAliveInterval = TimeSpan.FromMilliseconds(-1)
+                    KeepAliveInterval = Timeout.InfiniteTimeSpan
                 }
             }))
             {
                 _ws.ReconnectionHappened.Subscribe(info =>
                     Log.Warning("CXIM: Reconnection happened, type: {Type}", info.Type));
+                _ws.DisconnectionHappened.Subscribe(info => Log.Error(
+                    info.Exception,
+                    @"CXIM: Disconnection happened: {Type} {Status}",
+                    info.Type,
+                    info.CloseStatus
+                ));
 
                 async void OnMessageReceived(ResponseMessage msg)
                 {
