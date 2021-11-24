@@ -238,16 +238,16 @@ namespace cx_auto_sign
                                     var signType = GetSignType(data);
                                     log.Information("签到类型：{Type}",
                                         GetSignTypeName(signType));
-                                    // ReSharper disable once ConvertIfStatementToSwitchStatement
-                                    if (signType == SignType.Gesture)
+                                    // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+                                    switch (signType)
                                     {
-                                        log.Information("手势：{Code}",
-                                            data["signCode"]?.Value<string>());
-                                    }
-                                    else if (signType == SignType.Qr)
-                                    {
-                                        log.Warning("暂时无法二维码签到");
-                                        continue;
+                                        case SignType.Gesture:
+                                            log.Information("手势：{Code}",
+                                                data["signCode"]?.Value<string>());
+                                            break;
+                                        case SignType.Qr:
+                                            log.Warning("暂时无法二维码签到");
+                                            continue;
                                     }
 
                                     if (enableWeiApi && !WebApi.IntervalData.Status.CxAutoSignEnabled)
@@ -269,12 +269,34 @@ namespace cx_auto_sign
                                         continue;
                                     }
 
-                                    if (signType == SignType.Photo)
+                                    // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+                                    switch (signType)
                                     {
-                                        signOptions.ImageId = await courseConfig.GetImageIdAsync(client, log);
-                                        log.Information("预览：{Url}",
-                                            $"https://p.ananas.chaoxing.com/star3/170_220c/{signOptions.ImageId}");
+                                        case SignType.Photo:
+                                            var iid = signOptions.ImageId
+                                                = await courseConfig.GetImageIdAsync(client, log);
+                                            log.Information(
+                                                "预览：{Url}",
+                                                $"https://p.ananas.chaoxing.com/star3/170_220c/{iid}"
+                                            );
+                                            break;
+                                        case SignType.Location:
+                                            if (data["ifopenAddress"].Value<int>() != 0)
+                                            {
+                                                signOptions.Address = data["locationText"].Value<string>();
+                                                signOptions.Longitude = data["locationLongitude"].Value<string>();
+                                                signOptions.Latitude = data["locationLatitude"].Value<string>();
+                                                log.Information(
+                                                    "教师指定签到地点：{Text} ({X}, {Y}) ±{Range}米",
+                                                    signOptions.Address,
+                                                    signOptions.Longitude,
+                                                    signOptions.Latitude,
+                                                    data["locationRange"].Value<string>()
+                                                );
+                                            }
+                                            break;
                                     }
+
                                     log.Information("签到准备完毕，耗时：{Time}ms",
                                         GetTimestamp() - startTime);
                                     var takenTime = GetTimestamp() - taskTime;
