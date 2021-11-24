@@ -214,7 +214,6 @@ namespace cx_auto_sign
                                         continue;
                                     }
                                     countCache.Count++;
-                                    count = countCache.Count;
                                     var task = tasks[count - 1];
                                     var taskTime = task["startTime"]!.Value<long>();
                                     log.Information("任务时间: {Time}", taskTime);
@@ -389,7 +388,10 @@ namespace cx_auto_sign
             foreach (var (chatId, course) in courses)
             {
                 var cache = new CountCache();
-                var tasks = await client.GetSignTasksAsync(chatId, course["ClassId"]!.ToString());
+                var tasks = await client.GetSignTasksAsync(
+                    (string) course["CourseId"],
+                    (string) course["ClassId"]
+                );
                 cache.Count = tasks.Count;
                 // Log.Information("{CourseName} - {ClassName}: {Count}", 
                 //     course["CourseName"]!.ToString(), 
