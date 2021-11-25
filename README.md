@@ -1,4 +1,5 @@
 # cx-auto-sign
+ ## 👀因作者精力有限本仓库已经停止维护，可以考虑其他同类型项目或由开源爱好者维护的本项目的 [fork](https://github.com/moeshin/cx-auto-sign)。
 
 ## ⚠注意
 * 由于超星学习通更新，目前无法签到二维码签到 [#23](https://github.com/cyanray/cx-auto-sign/issues/23) 。其他类型的签到正常。
