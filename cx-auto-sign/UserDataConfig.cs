@@ -75,7 +75,8 @@ namespace cx_auto_sign
 
         public CourseDataConfig GetCourse(string chatId)
         {
-            return new CourseDataConfig(_courses?[chatId]);
+            var course = _courses?[chatId];
+            return course == null ? null : new CourseDataConfig(course);
         }
 
         private void Save()
@@ -110,19 +111,25 @@ namespace cx_auto_sign
             return Dir + "/" + user + ".json5";
         }
 
-        public async Task UpdateAsync()
+        public async Task UpdateAsync(CxSignClient client = null)
         {
-            Log.Information("正在登录账号：{Username}", Username);
-            var client = await CxSignClient.LoginAsync(Username, Password, Fid);
-            Log.Information("成功登录账号");
+            if (client == null)
+            {
+                Log.Information("正在登录账号：{Username}", Username);
+                client = await CxSignClient.LoginAsync(Username, Password, Fid);
+                Log.Information("成功登录账号");
+            }
 
             Log.Information("获取课程数据中...");
             await client.GetCoursesAsync(_courses);
             foreach (var (_, course) in _courses)
             {
-                Log.Information("发现课程：{CourseName}-{ClassName} ({CourseId}, {ClassId})",
-                    course["CourseName"], course["ClassName"],
-                    course["CourseId"], course["ClassId"]);
+                Log.Logger.Information("发现课程：{CourseName}-{ClassName} ({CourseId}, {ClassId})",
+                    (string) course["CourseName"],
+                    (string) course["ClassName"],
+                    (string) course["CourseId"],
+                    (string) course["ClassId"]
+                );
             }
             Save();
         }

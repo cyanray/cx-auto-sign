@@ -83,16 +83,13 @@ namespace CxSignHelper
                 CookieContainer = _cookie
             };
             var request = new RestRequest("v2/apis/active/student/activelist");
-            request.AddParameter("fid", "0");
+            request.AddParameter("fid", Fid ?? "0");
             request.AddParameter("courseId", courseId);
             request.AddParameter("classId", classId);
             var response = await client.ExecuteGetAsync(request);
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
-            if (json["result"]!.Value<int>() != 1)
-            {
-                throw new Exception(json["msg"]?.Value<string>());
-            }
+            TestResult(json);
             return (JArray)json["data"]!["activeList"];
         }
 
@@ -107,11 +104,7 @@ namespace CxSignHelper
             var response = await client.ExecuteGetAsync(request);
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
-            if (json["result"]?.Value<int>() != 1)
-            {
-                throw new Exception("Message: " + json["msg"]?.Value<string>() +
-                                    "\nError Message: " + json["errorMsg"]?.Value<string>());
-            }
+            TestResult(json);
             return json["data"];
         }
 
@@ -141,8 +134,7 @@ namespace CxSignHelper
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var regex = new Regex(@"loginByToken\('(\d+?)', '([^']+?)'\);");
             var match = regex.Match(response.Content);
@@ -155,12 +147,11 @@ namespace CxSignHelper
 
         public async Task GetCoursesAsync(JToken course)
         {
-            var client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&start=0&size=500&catalogId=0&searchname=")
+            var client = new RestClient("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&catalogId=0&searchname=")
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var regex = new Regex(@"\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+""");
             var matches = regex.Matches(response.Content);
@@ -191,8 +182,7 @@ namespace CxSignHelper
             {
                 CookieContainer = _cookie
             };
-            var request = new RestRequest(Method.GET);
-            var response = await client.ExecuteGetAsync(request);
+            var response = await client.ExecuteGetAsync(new RestRequest());
             TestResponseCode(response);
             var json = JObject.Parse(response.Content);
             if (json["result"]!.Value<int>() != 1)
@@ -242,6 +232,15 @@ namespace CxSignHelper
             if (code != HttpStatusCode.OK)
             {
                 throw new Exception($"非 200 状态响应：{code:D} {code:G}\n{response.Content}");
+            }
+        }
+
+        private static void TestResult(JObject json)
+        {
+            if (json["result"]!.Value<int>() != 1)
+            {
+                throw new Exception("Message: " + json["msg"]?.Value<string>() +
+                                    "\nError Message: " + json["errorMsg"]?.Value<string>());
             }
         }
     }
